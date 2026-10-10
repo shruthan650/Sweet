@@ -4,7 +4,14 @@ Sweet is a Java 25 / Spring Boot city-simulation project that models roads, inte
 
 ## Current state
 
-This repository currently hosts the backend application for the simulator. The domain model and simulation primitives are implemented in the `com.shruthan.sweet` package, with an initial set of unit tests covering validation and state transitions.
+This repository currently hosts the backend application for the simulator. The domain model, simulation primitives, and road-network validation are implemented in the `com.shruthan.sweet` package, with unit tests covering validation and state transitions.
+
+### Milestone tracking
+
+- Phase 0: environment and repository setup complete
+- Phase 1: domain model complete
+- Phase 2: city grid and road-network validation complete
+- Phase 3: simulation engine next
 
 ## Requirements
 
