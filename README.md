@@ -12,6 +12,8 @@ This repository currently hosts the backend application for the simulator. The d
 - Phase 1: domain model complete
 - Phase 2: city grid and road-network validation complete
 - Phase 3: simulation engine complete
+- Phase 4: pathfinding and simulation integrity complete
+- Phase 5: API and persistence scaffolding complete
 
 ## Requirements
 
