@@ -2,6 +2,7 @@ package com.shruthan.sweet.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Vehicle {
 
@@ -136,5 +137,26 @@ public class Vehicle {
 
     public boolean hasReachedDestination() {
         return destination != null && currentIntersection != null && destination.equals(currentIntersection);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof Vehicle other)) {
+            return false;
+        }
+        return Objects.equals(id, other.id)
+                && Objects.equals(name, other.name)
+                && x == other.x
+                && y == other.y
+                && speedKph == other.speedKph
+                && status == other.status;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, x, y, speedKph, status);
     }
 }

@@ -35,6 +35,10 @@ public final class PathFinder {
 
     private static List<Intersection> bfs(City city, Intersection start, Intersection end) {
         validate(city, start, end);
+        if (start.equals(end)) {
+            return List.of(start);
+        }
+
         Map<Intersection, Intersection> previous = new HashMap<>();
         Deque<Intersection> queue = new ArrayDeque<>();
         Set<Intersection> visited = new HashSet<>();
@@ -60,6 +64,10 @@ public final class PathFinder {
 
     private static List<Intersection> dijkstra(City city, Intersection start, Intersection end) {
         validate(city, start, end);
+        if (start.equals(end)) {
+            return List.of(start);
+        }
+
         Map<Intersection, Integer> distance = new HashMap<>();
         Map<Intersection, Intersection> previous = new HashMap<>();
         PriorityQueue<Node> queue = new PriorityQueue<>((a, b) -> Integer.compare(a.distance, b.distance));
@@ -89,7 +97,7 @@ public final class PathFinder {
     }
 
     private static List<Intersection> neighbors(City city, Intersection intersection) {
-        List<Intersection> neighbors = new ArrayList<>();
+        Set<Intersection> neighbors = new HashSet<>();
         for (Road road : city.getRoads()) {
             if (Objects.equals(road.getStart(), intersection)) {
                 neighbors.add(road.getEnd());
@@ -97,7 +105,7 @@ public final class PathFinder {
                 neighbors.add(road.getStart());
             }
         }
-        return neighbors;
+        return new ArrayList<>(neighbors);
     }
 
     private static int getRoadWeight(City city, Intersection from, Intersection to) {
@@ -127,6 +135,9 @@ public final class PathFinder {
         }
         if (start == null || end == null) {
             throw new IllegalArgumentException("Start and end intersections are required");
+        }
+        if (!city.contains(start) || !city.contains(end)) {
+            throw new IllegalArgumentException("Start and end intersections must be within the city grid");
         }
         if (city.getIntersections().isEmpty()) {
             throw new IllegalArgumentException("City does not have any intersections");

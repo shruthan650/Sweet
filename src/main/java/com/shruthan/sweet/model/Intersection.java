@@ -2,6 +2,7 @@ package com.shruthan.sweet.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Intersection {
 
@@ -111,5 +112,21 @@ public class Intersection {
 
     public boolean matches(int x, int y) {
         return this.x == x && this.y == y;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof Intersection other)) {
+            return false;
+        }
+        return Objects.equals(id, other.id) && x == other.x && y == other.y;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, x, y);
     }
 }
