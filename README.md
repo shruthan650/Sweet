@@ -14,7 +14,7 @@ This repository currently hosts the backend application for the simulator. The d
 - Phase 3: simulation engine complete
 - Phase 4: pathfinding and simulation integrity complete
 - Phase 5: API and persistence scaffolding complete
-- Phase 6: web frontend scaffold complete
+- Phase 6: interactive 2D city editor complete
 
 ## Requirements
 
@@ -34,6 +34,18 @@ This repository currently hosts the backend application for the simulator. The d
 ```powershell
 ./mvnw spring-boot:run
 ```
+
+### Run the web editor locally
+
+Start the Spring Boot API (and configure it to use a local or deployed Worker), then start the frontend:
+
+```powershell
+cd web
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`. The editor can create and save cities, place intersections and roads, add buildings and vehicles, configure traffic lights, and use the simulation controls. Vite proxies `/api` requests to `http://localhost:8080` by default; set `SWEET_API_TARGET` to use a different Spring Boot address. The browser communicates only with Spring Boot, not directly with the D1 Worker.
 
 ## Cloudflare D1 persistence
 

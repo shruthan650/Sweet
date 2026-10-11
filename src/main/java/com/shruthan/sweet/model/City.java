@@ -3,6 +3,9 @@ package com.shruthan.sweet.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+@JsonPropertyOrder({"id", "name", "width", "height", "roads", "intersections", "vehicles", "buildings"})
 public class City {
 
     private String id;
