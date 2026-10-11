@@ -1,10 +1,19 @@
 package com.shruthan.sweet.repository;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
+import java.util.List;
+import java.util.Optional;
 
 import com.shruthan.sweet.model.City;
 
-@Repository
-public interface CityRepository extends MongoRepository<City, String> {
+public interface CityRepository {
+
+    List<City> findAll();
+
+    Optional<City> findById(String id);
+
+    City create(City city);
+
+    City update(String id, City city);
+
+    void deleteById(String id);
 }

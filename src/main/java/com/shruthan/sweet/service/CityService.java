@@ -2,6 +2,7 @@ package com.shruthan.sweet.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
@@ -29,18 +30,24 @@ public class CityService {
         if (city == null) {
             throw new IllegalArgumentException("City is required");
         }
-        return cityRepository.save(city);
+        if (city.getId() == null || city.getId().isBlank()) {
+            city.setId(UUID.randomUUID().toString());
+        }
+        return cityRepository.create(city);
     }
 
     public City update(String id, City city) {
         if (city == null) {
             throw new IllegalArgumentException("City is required");
         }
-        if (!cityRepository.existsById(id)) {
-            throw new IllegalArgumentException("City not found: " + id);
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("City id is required");
+        }
+        if (cityRepository.findById(id).isEmpty()) {
+            throw new CityNotFoundException(id);
         }
         city.setId(id);
-        return cityRepository.save(city);
+        return cityRepository.update(id, city);
     }
 
     public void delete(String id) {

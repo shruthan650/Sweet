@@ -45,11 +45,7 @@ public class CityController {
 
     @PutMapping("/{id}")
     public ResponseEntity<City> updateCity(@PathVariable String id, @RequestBody City city) {
-        try {
-            return ResponseEntity.ok(cityService.update(id, city));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(cityService.update(id, city));
     }
 
     @DeleteMapping("/{id}")

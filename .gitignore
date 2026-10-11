@@ -35,3 +35,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Frontend ###
+web/node_modules/
+web/dist/
+worker/node_modules/
+worker/.wrangler/
+worker/.dev.vars
