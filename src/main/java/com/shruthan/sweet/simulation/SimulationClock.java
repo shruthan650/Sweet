@@ -58,6 +58,10 @@ public class SimulationClock {
         this.running = false;
     }
 
+    public void resume() {
+        this.running = true;
+    }
+
     public void reset() {
         this.currentTick = 0;
         this.running = false;

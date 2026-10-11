@@ -4,7 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.shruthan.sweet.model.City;
+import com.shruthan.sweet.model.Intersection;
+import com.shruthan.sweet.model.TrafficLight;
 import com.shruthan.sweet.model.Vehicle;
+import com.shruthan.sweet.model.VehicleStatus;
 
 public class SimulationEngine {
 
@@ -48,8 +51,16 @@ public class SimulationEngine {
         clock.pause();
     }
 
+    public void resume() {
+        clock.resume();
+    }
+
     public void reset() {
         clock.reset();
+        for (Vehicle vehicle : city.getVehicles()) {
+            vehicle.setStatus(VehicleStatus.IDLE);
+            vehicle.setCurrentIntersection(null);
+        }
         events.clear();
     }
 
@@ -57,12 +68,12 @@ public class SimulationEngine {
         if (!clock.isRunning()) {
             return;
         }
+
         clock.tick();
-        for (Vehicle vehicle : city.getVehicles()) {
-            if (vehicle.getStatus() == com.shruthan.sweet.model.VehicleStatus.IDLE) {
-                vehicle.setStatus(com.shruthan.sweet.model.VehicleStatus.MOVING);
-            }
-        }
+        updateTrafficLights();
+        updateVehicles();
+        addEvent(new SimulationEvent("event-" + clock.getCurrentTick(), clock.getCurrentTick(), "tick",
+                "Simulation advanced to tick " + clock.getCurrentTick()));
     }
 
     public void addEvent(SimulationEvent event) {
@@ -70,5 +81,30 @@ public class SimulationEngine {
             throw new IllegalArgumentException("Event cannot be null");
         }
         events.add(event);
+    }
+
+    private void updateTrafficLights() {
+        for (Intersection intersection : city.getIntersections()) {
+            TrafficLight light = intersection.getTrafficLight();
+            if (light != null) {
+                light.advance();
+            }
+        }
+    }
+
+    private void updateVehicles() {
+        for (Vehicle vehicle : city.getVehicles()) {
+            if (vehicle == null) {
+                continue;
+            }
+            if (vehicle.getCurrentIntersection() == null && !vehicle.getRoute().isEmpty()) {
+                vehicle.setCurrentIntersection(vehicle.getRoute().remove(0));
+                vehicle.setX(vehicle.getCurrentIntersection().getX());
+                vehicle.setY(vehicle.getCurrentIntersection().getY());
+                vehicle.setStatus(VehicleStatus.MOVING);
+                continue;
+            }
+            vehicle.advanceRoute();
+        }
     }
 }

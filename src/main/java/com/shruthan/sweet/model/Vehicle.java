@@ -117,6 +117,23 @@ public class Vehicle {
         this.status = VehicleStatus.MOVING;
     }
 
+    public void advanceRoute() {
+        if (route == null || route.isEmpty()) {
+            if (destination != null && currentIntersection != null && destination.equals(currentIntersection)) {
+                status = VehicleStatus.ARRIVED;
+            } else if (status != VehicleStatus.ARRIVED) {
+                status = VehicleStatus.IDLE;
+            }
+            return;
+        }
+
+        Intersection next = route.remove(0);
+        currentIntersection = next;
+        x = next.getX();
+        y = next.getY();
+        status = destination != null && destination.equals(next) ? VehicleStatus.ARRIVED : VehicleStatus.MOVING;
+    }
+
     public boolean hasReachedDestination() {
         return destination != null && currentIntersection != null && destination.equals(currentIntersection);
     }

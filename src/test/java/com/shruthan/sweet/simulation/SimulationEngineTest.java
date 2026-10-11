@@ -1,0 +1,85 @@
+package com.shruthan.sweet.simulation;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+
+import com.shruthan.sweet.model.City;
+import com.shruthan.sweet.model.Intersection;
+import com.shruthan.sweet.model.Road;
+import com.shruthan.sweet.model.RoadType;
+import com.shruthan.sweet.model.TrafficLight;
+import com.shruthan.sweet.model.TrafficLightState;
+import com.shruthan.sweet.model.Vehicle;
+import com.shruthan.sweet.model.VehicleStatus;
+
+class SimulationEngineTest {
+
+    @Test
+    void clockStartsTicksAndResetsCleanly() {
+        SimulationClock clock = new SimulationClock();
+
+        assertEquals(0L, clock.getCurrentTick());
+        assertFalse(clock.isRunning());
+
+        clock.start();
+        clock.tick();
+        assertTrue(clock.isRunning());
+        assertEquals(1L, clock.getCurrentTick());
+
+        clock.pause();
+        clock.tick();
+        assertEquals(2L, clock.getCurrentTick());
+
+        clock.resume();
+        clock.reset();
+        assertEquals(0L, clock.getCurrentTick());
+        assertFalse(clock.isRunning());
+    }
+
+    @Test
+    void engineRunsDeterministicTickSequence() {
+        City city = new City("city-1", "Downtown", 20, 20);
+        Intersection start = new Intersection("i1", 2, 2);
+        Intersection end = new Intersection("i2", 8, 2);
+        TrafficLight light = new TrafficLight("tl-1", start, TrafficLightState.RED, 5);
+        start.setTrafficLight(light);
+        city.addIntersection(start);
+        city.addIntersection(end);
+        city.addRoad(new Road("r1", "Main", start, end, RoadType.STREET));
+
+        Vehicle vehicle = new Vehicle("v1", "Taxi", 2, 2, 30);
+        vehicle.setCurrentIntersection(start);
+        vehicle.setRoute(List.of(end));
+        vehicle.setDestination(end);
+        city.addVehicle(vehicle);
+
+        SimulationEngine engine = new SimulationEngine(city);
+        engine.start();
+        engine.tick();
+
+        assertEquals(1L, engine.getClock().getCurrentTick());
+        assertEquals(TrafficLightState.GREEN, light.getState());
+        assertEquals(VehicleStatus.ARRIVED, vehicle.getStatus());
+        assertEquals(end.getX(), vehicle.getX());
+        assertEquals(end.getY(), vehicle.getY());
+    }
+
+    @Test
+    void engineStopsWhenPaused() {
+        City city = new City("city-1", "Downtown", 10, 10);
+        Vehicle vehicle = new Vehicle("v1", "Car", 1, 1, 20);
+        city.addVehicle(vehicle);
+
+        SimulationEngine engine = new SimulationEngine(city);
+        engine.pause();
+        engine.tick();
+
+        assertEquals(0L, engine.getClock().getCurrentTick());
+        assertEquals(VehicleStatus.IDLE, vehicle.getStatus());
+    }
+}
