@@ -38,7 +38,7 @@ The repository contains the Spring Boot backend, Cloudflare D1 Worker, React web
 
 Start the Spring Boot API first. The desktop client uses `http://localhost:8080` by default; set `SWEET_API_BASE_URL` to a different HTTP(S) origin when needed. Create and delete cities from the sidebar; deletion requires confirmation.
 Place vehicles on intersections, then select a vehicle and choose a connected destination; the backend computes and saves the route. Deleting roads or intersections clears affected vehicle routes.
-Simulation ticks now persist vehicle and traffic-light state; the desktop Step action advances exactly one tick while paused. City edits update an active simulation, and deleting a city removes its active simulation.
+Simulation ticks now persist vehicle and traffic-light state; Reset restores the engine's starting vehicle and traffic-light state and persists it, while the desktop Step action advances exactly one tick while paused. City edits update an active simulation, and deleting a city removes its active simulation.
 
 ```powershell
 .\mvnw.cmd -f desktop\pom.xml test

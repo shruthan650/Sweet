@@ -86,6 +86,7 @@ public class SimulationService {
     public SimulationStatusDto reset(String cityId) {
         SimulationEngine engine = getOrCreate(cityId);
         engine.reset();
+        cityService.update(cityId, engine.getCity());
         return toStatus(cityId, engine);
     }
 

@@ -18,6 +18,8 @@ import com.shruthan.sweet.model.Intersection;
 import com.shruthan.sweet.model.Road;
 import com.shruthan.sweet.model.RoadDirection;
 import com.shruthan.sweet.model.RoadType;
+import com.shruthan.sweet.model.TrafficLight;
+import com.shruthan.sweet.model.TrafficLightState;
 import com.shruthan.sweet.model.Vehicle;
 import com.shruthan.sweet.model.VehicleStatus;
 import com.shruthan.sweet.repository.CityRepository;
@@ -140,6 +142,38 @@ class SimulationServiceTest {
         assertEquals(5, repository.city.getVehicles().getFirst().getX());
         assertEquals(VehicleStatus.ARRIVED, repository.city.getVehicles().getFirst().getStatus());
         assertEquals(1, repository.updateCount);
+    }
+
+    @Test
+    void resetPersistsResetStateAndClearsSimulationEvents() {
+        City city = cityWithRoad(true);
+        TrafficLight trafficLight = new TrafficLight("traffic-light-1",
+                city.getIntersections().getFirst(), TrafficLightState.GREEN, 10);
+        city.getIntersections().getFirst().setTrafficLight(trafficLight);
+        InMemoryCityRepository repository = new InMemoryCityRepository(city);
+        SimulationService service = new SimulationService(new CityService(repository));
+        service.assignDestination("city-1", "vehicle-1", "intersection-2");
+        service.start("city-1");
+        service.tick("city-1");
+        repository.updateCount = 0;
+
+        var status = service.reset("city-1");
+
+        Vehicle resetVehicle = repository.city.getVehicles().getFirst();
+        assertEquals(0L, status.tick());
+        assertFalse(status.running());
+        assertTrue(status.events().isEmpty());
+        assertEquals(1, repository.updateCount);
+        assertEquals(1, resetVehicle.getX());
+        assertEquals(1, resetVehicle.getY());
+        assertEquals("intersection-1", resetVehicle.getCurrentIntersection().getId());
+        assertEquals(VehicleStatus.MOVING, resetVehicle.getStatus());
+        assertEquals(List.of("intersection-2"),
+                resetVehicle.getRoute().stream().filter(Objects::nonNull)
+                        .map(intersection -> intersection.getId()).toList());
+        assertEquals("intersection-2", resetVehicle.getDestination().getId());
+        assertEquals(TrafficLightState.GREEN,
+                repository.city.getIntersections().getFirst().getTrafficLight().getState());
     }
 
     @Test
