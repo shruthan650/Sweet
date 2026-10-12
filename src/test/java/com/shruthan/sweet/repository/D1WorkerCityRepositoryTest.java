@@ -56,6 +56,45 @@ class D1WorkerCityRepositoryTest {
     }
 
     @Test
+    void updateUsesTheStableCityIdAndWorkerRoute() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        D1WorkerCityRepository repository = new D1WorkerCityRepository(builder, "https://worker.test", SECRET);
+        String responseBody = """
+                {
+                  "id":"city-1","name":"Updated","width":20,"height":20,
+                  "roads":[],"intersections":[],"vehicles":[],"buildings":[]
+                }
+                """;
+        server.expect(requestTo("https://worker.test/v1/cities/city-1"))
+                .andExpect(method(HttpMethod.PUT))
+                .andExpect(header("Authorization", "Bearer " + SECRET))
+                .andExpect(MockRestRequestMatchers.content()
+                        .string(org.hamcrest.Matchers.containsString("\"name\":\"Downtown\"")))
+                .andRespond(withSuccess(responseBody, MediaType.APPLICATION_JSON));
+
+        City saved = repository.update("city-1", cityWithConnectedRoad());
+
+        assertEquals("Updated", saved.getName());
+        server.verify();
+    }
+
+    @Test
+    void deleteUsesTheWorkerCityRoute() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        D1WorkerCityRepository repository = new D1WorkerCityRepository(builder, "https://worker.test", SECRET);
+        server.expect(requestTo("https://worker.test/v1/cities/city-1"))
+                .andExpect(method(HttpMethod.DELETE))
+                .andExpect(header("Authorization", "Bearer " + SECRET))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        repository.deleteById("city-1");
+
+        server.verify();
+    }
+
+    @Test
     void missingCityIsRepresentedAsAnEmptyOptional() {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();

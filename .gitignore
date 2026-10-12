@@ -4,6 +4,7 @@ bin/
 .metadata/
 .env
 .env.*
+!.env.example
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

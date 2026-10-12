@@ -15,6 +15,7 @@ The repository contains the Spring Boot backend, Cloudflare D1 Worker, React web
 - Phase 4: pathfinding and traffic complete
 - Phase 5: Spring Boot REST API complete
 - Phase 6: JavaFX desktop application complete
+- Phase 7: Cloudflare D1 persistence complete; local Worker/D1 integration verified (remote deployment verification in Phase 11)
 
 ## Requirements
 
@@ -26,6 +27,9 @@ The repository contains the Spring Boot backend, Cloudflare D1 Worker, React web
 
 ```powershell
 .\mvnw.cmd test
+npm.cmd --prefix worker test
+npm.cmd --prefix worker run typecheck
+npm.cmd --prefix web run build
 ```
 
 ## Run the app
@@ -44,6 +48,36 @@ Simulation ticks persist vehicle and traffic-light state; Start and Resume advan
 .\mvnw.cmd -f desktop\pom.xml test
 .\mvnw.cmd -f desktop\pom.xml javafx:run
 ```
+
+## Cloudflare D1 persistence
+
+The Spring Boot backend persists city configuration through the Cloudflare Worker; frontend clients must use the Spring Boot API and must not connect to D1 directly. The Worker stores cities, intersections (including traffic-light configuration), roads and their directional links, buildings, vehicles, and vehicle routes in normalized tables. Simulation ticks and event history are currently in-memory runtime state and are not retained in D1.
+
+Configure Spring Boot with `SWEET_WORKER_BASE_URL` and `SWEET_WORKER_SHARED_SECRET`. Configure the Worker secret as `SWEET_API_SECRET` using a Wrangler secret for deployment or `worker/.dev.vars` locally; both sides must use the same secret. Never commit real secrets. The backend requires HTTPS for non-local Worker URLs and uses 5-second connection and 15-second response timeouts.
+
+For local development, start the Worker in its own terminal:
+
+```powershell
+Set-Location worker
+npm run dev
+```
+
+Apply or inspect local migrations from another terminal:
+
+```powershell
+Set-Location worker
+npx wrangler d1 migrations apply sweet-db --local
+npx wrangler d1 migrations list sweet-db --local
+```
+
+Before using a deployed database, replace the placeholder `database_id` in `worker/wrangler.toml` with the existing Cloudflare D1 database ID. Then apply remote migrations:
+
+```powershell
+Set-Location worker
+npx wrangler d1 migrations apply sweet-db --remote
+```
+
+Set the actual Worker URL and a valid secret in the backend environment before starting the API. Do not run the remote migration command until the database ID is configured and the target database is confirmed.
 
 ## Project structure
 
