@@ -3,10 +3,14 @@ package com.shruthan.sweet.desktop;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
+import javafx.util.Duration;
 import javafx.scene.control.Button;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -51,6 +55,8 @@ public class SweetDesktopApplication extends Application {
         AtomicInteger cityLoadSequence = new AtomicInteger();
         AtomicInteger cityListLoadSequence = new AtomicInteger();
         AtomicBoolean simulationBusy = new AtomicBoolean();
+        AtomicBoolean simulationRunning = new AtomicBoolean();
+        AtomicReference<String> activeSimulationCityId = new AtomicReference<>();
         AtomicReference<JsonNode> currentCity = new AtomicReference<>();
         AtomicReference<String> currentTool = new AtomicReference<>("select");
         AtomicReference<JsonNode> roadStart = new AtomicReference<>();
@@ -76,14 +82,57 @@ public class SweetDesktopApplication extends Application {
         deleteCityButton.setDisable(true);
         createCityButton.setOnAction(event -> showCreateCityDialog(stage, apiClient, cityList, cityCanvas,
                 statusLabel, refreshButton, cityListLoadSequence));
-        deleteCityButton.setOnAction(event -> confirmDeleteCity(stage, apiClient, cityList, cityCanvas,
-                statusLabel, refreshButton, cityListLoadSequence, selectedCity.get(), deleteCityButton));
         Button startButton = new Button("Start");
         Button pauseButton = new Button("Pause");
         Button resumeButton = new Button("Resume");
         Button tickButton = new Button("Step");
         Button resetButton = new Button("Reset");
         Label simulationLabel = new Label("Simulation idle");
+        Timeline simulationTimer = new Timeline();
+        simulationTimer.getKeyFrames().setAll(new KeyFrame(Duration.seconds(1), event -> {
+            String activeCityId = activeSimulationCityId.get();
+            if (activeCityId == null || !simulationBusy.compareAndSet(false, true)) {
+                return;
+            }
+            apiClient.tickSimulation(activeCityId).whenComplete((result, failure) -> Platform.runLater(() -> {
+                simulationBusy.set(false);
+                if (!activeCityId.equals(activeSimulationCityId.get())) {
+                    return;
+                }
+                if (failure != null) {
+                    simulationTimerStop(simulationTimer, activeSimulationCityId, simulationRunning);
+                    CitySummary currentSelection = cityList.getSelectionModel().getSelectedItem();
+                    if (currentSelection != null && activeCityId.equals(currentSelection.id())) {
+                        simulationLabel.setText("Automatic tick failed: " + errorMessage(failure));
+                        apiClient.pauseSimulation(activeCityId).whenComplete((paused, pauseFailure) -> {
+                            if (pauseFailure != null) {
+                                Platform.runLater(() -> simulationLabel.setText(
+                                        "Automatic tick failed: " + errorMessage(failure)
+                                                + "; pause failed: " + errorMessage(pauseFailure)));
+                            }
+                        });
+                    }
+                    return;
+                }
+                simulationRunning.set(result.running());
+                if (!result.running()) {
+                    simulationTimerStop(simulationTimer, activeSimulationCityId, simulationRunning);
+                }
+                CitySummary currentSelection = cityList.getSelectionModel().getSelectedItem();
+                if (currentSelection != null && activeCityId.equals(currentSelection.id())) {
+                    simulationLabel.setText("Tick " + result.tick() + " · "
+                            + (result.running() ? "running" : "paused"));
+                    loadCity(apiClient, currentSelection, cityCanvas, currentCity, statusLabel, cityLoadSequence);
+                    updateSimulationButtons(false, currentSelection == null, result.running(),
+                            startButton, pauseButton, resumeButton,
+                            tickButton, resetButton);
+                }
+            }));
+        }));
+        simulationTimer.setCycleCount(Animation.INDEFINITE);
+        deleteCityButton.setOnAction(event -> confirmDeleteCity(stage, apiClient, cityList, cityCanvas,
+                statusLabel, refreshButton, cityListLoadSequence, selectedCity.get(), deleteCityButton,
+                simulationTimer, activeSimulationCityId, simulationRunning));
         Label inspectorLabel = new Label("Select a map feature to inspect it.");
         inspectorLabel.setWrapText(true);
         VBox inspector = new VBox(10, new Label("Inspector"), inspectorLabel);
@@ -127,29 +176,41 @@ public class SweetDesktopApplication extends Application {
         HBox simulationControls = new HBox(8, startButton, pauseButton, resumeButton, tickButton, resetButton);
         simulationControls.setPadding(new Insets(10));
         startButton.setOnAction(event -> runSimulationAction(apiClient, cityList, cityCanvas, statusLabel,
-                simulationLabel, currentCity, cityLoadSequence, simulationBusy, startButton, pauseButton, resumeButton,
-                tickButton, resetButton, apiClient::startSimulation));
+                simulationLabel, currentCity, cityLoadSequence, simulationBusy, simulationRunning,
+                activeSimulationCityId, simulationTimer, startButton, pauseButton, resumeButton, tickButton, resetButton,
+                apiClient::startSimulation));
         pauseButton.setOnAction(event -> runSimulationAction(apiClient, cityList, cityCanvas, statusLabel,
-                simulationLabel, currentCity, cityLoadSequence, simulationBusy, startButton, pauseButton, resumeButton,
-                tickButton, resetButton, apiClient::pauseSimulation));
+                simulationLabel, currentCity, cityLoadSequence, simulationBusy, simulationRunning,
+                activeSimulationCityId, simulationTimer, startButton, pauseButton, resumeButton, tickButton, resetButton,
+                apiClient::pauseSimulation));
         resumeButton.setOnAction(event -> runSimulationAction(apiClient, cityList, cityCanvas, statusLabel,
-                simulationLabel, currentCity, cityLoadSequence, simulationBusy, startButton, pauseButton, resumeButton,
-                tickButton, resetButton, apiClient::resumeSimulation));
+                simulationLabel, currentCity, cityLoadSequence, simulationBusy, simulationRunning,
+                activeSimulationCityId, simulationTimer, startButton, pauseButton, resumeButton, tickButton, resetButton,
+                apiClient::resumeSimulation));
         tickButton.setOnAction(event -> runSimulationAction(apiClient, cityList, cityCanvas, statusLabel,
-                simulationLabel, currentCity, cityLoadSequence, simulationBusy, startButton, pauseButton, resumeButton,
-                tickButton, resetButton, apiClient::stepSimulation));
+                simulationLabel, currentCity, cityLoadSequence, simulationBusy, simulationRunning,
+                activeSimulationCityId, simulationTimer, startButton, pauseButton, resumeButton, tickButton, resetButton,
+                apiClient::stepSimulation));
         resetButton.setOnAction(event -> runSimulationAction(apiClient, cityList, cityCanvas, statusLabel,
-                simulationLabel, currentCity, cityLoadSequence, simulationBusy, startButton, pauseButton, resumeButton,
-                tickButton, resetButton, apiClient::resetSimulation));
+                simulationLabel, currentCity, cityLoadSequence, simulationBusy, simulationRunning,
+                activeSimulationCityId, simulationTimer, startButton, pauseButton, resumeButton, tickButton, resetButton,
+                apiClient::resetSimulation));
         cityList.getSelectionModel().selectedItemProperty().addListener((observable, previous, selected) -> {
             boolean noCitySelected = selected == null;
             deleteCityButton.setDisable(noCitySelected);
-            startButton.setDisable(noCitySelected || simulationBusy.get());
-            pauseButton.setDisable(noCitySelected || simulationBusy.get());
-            resumeButton.setDisable(noCitySelected || simulationBusy.get());
-            tickButton.setDisable(noCitySelected || simulationBusy.get());
-            resetButton.setDisable(noCitySelected || simulationBusy.get());
+            updateSimulationButtons(simulationBusy.get(), noCitySelected, simulationRunning.get(),
+                    startButton, pauseButton, resumeButton, tickButton, resetButton);
             if (selected != null) {
+                String activeSimulationId = activeSimulationCityId.get();
+                if (activeSimulationId != null && !activeSimulationId.equals(selected.id())) {
+                    simulationTimerStop(simulationTimer, activeSimulationCityId, simulationRunning);
+                    apiClient.pauseSimulation(activeSimulationId).whenComplete((paused, failure) -> {
+                        if (failure != null) {
+                            Platform.runLater(() -> simulationLabel.setText(
+                                    "Could not pause previous city simulation: " + errorMessage(failure)));
+                        }
+                    });
+                }
                 selectedCity.set(selected);
                 selectedVehicle.set(null);
                 roadStart.set(null);
@@ -165,6 +226,8 @@ public class SweetDesktopApplication extends Application {
                 selectedVehicle.set(null);
                 roadStart.set(null);
                 saveCityButton.setDisable(true);
+                updateSimulationButtons(simulationBusy.get(), true, simulationRunning.get(),
+                        startButton, pauseButton, resumeButton, tickButton, resetButton);
             }
         });
         startButton.setDisable(true);
@@ -193,6 +256,18 @@ public class SweetDesktopApplication extends Application {
         stage.setMinWidth(640);
         stage.setMinHeight(480);
         stage.setScene(scene);
+        stage.setOnHidden(event -> {
+            String activeSimulationId = activeSimulationCityId.getAndSet(null);
+            simulationTimer.stop();
+            simulationRunning.set(false);
+            if (activeSimulationId != null) {
+                apiClient.pauseSimulation(activeSimulationId).whenComplete((paused, failure) -> {
+                    if (failure != null) {
+                        System.err.println("Could not pause simulation on window close: " + errorMessage(failure));
+                    }
+                });
+            }
+        });
         stage.show();
         loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton, cityListLoadSequence, null);
     }
@@ -295,7 +370,9 @@ public class SweetDesktopApplication extends Application {
 
     private static void confirmDeleteCity(Stage owner, SweetApiClient apiClient, ListView<CitySummary> cityList,
             CityCanvas cityCanvas, Label statusLabel, Button refreshButton,
-            AtomicInteger cityListLoadSequence, CitySummary selectedCity, Button deleteCityButton) {
+            AtomicInteger cityListLoadSequence, CitySummary selectedCity, Button deleteCityButton,
+            Timeline simulationTimer, AtomicReference<String> activeSimulationCityId,
+            AtomicBoolean simulationRunning) {
         if (selectedCity == null) {
             statusLabel.setText("Select a city before deleting it.");
             return;
@@ -309,12 +386,29 @@ public class SweetDesktopApplication extends Application {
         if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
             return;
         }
+        boolean wasRunning = selectedCity.id().equals(activeSimulationCityId.get());
+        if (wasRunning) {
+            simulationTimerStop(simulationTimer, activeSimulationCityId, simulationRunning);
+        }
         deleteCityButton.setDisable(true);
         statusLabel.setText("Deleting " + selectedCity.name() + "...");
         apiClient.deleteCity(selectedCity.id()).whenComplete((ignored, failure) -> Platform.runLater(() -> {
             deleteCityButton.setDisable(cityList.getSelectionModel().getSelectedItem() == null);
             if (failure != null) {
                 statusLabel.setText("Could not delete city: " + errorMessage(failure));
+                if (wasRunning) {
+                    apiClient.resumeSimulation(selectedCity.id()).whenComplete((resumed, resumeFailure) ->
+                            Platform.runLater(() -> {
+                                if (resumeFailure != null) {
+                                    statusLabel.setText("Could not delete city: " + errorMessage(failure)
+                                            + "; could not resume simulation: " + errorMessage(resumeFailure));
+                                    return;
+                                }
+                                activeSimulationCityId.set(selectedCity.id());
+                                simulationRunning.set(resumed.running());
+                                simulationTimer.playFromStart();
+                            }));
+                }
                 return;
             }
             loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton, cityListLoadSequence, null);
@@ -377,25 +471,50 @@ public class SweetDesktopApplication extends Application {
     private static void runSimulationAction(SweetApiClient apiClient, ListView<CitySummary> cityList,
             CityCanvas cityCanvas, Label cityStatus, Label simulationStatus, AtomicReference<JsonNode> currentCity,
             AtomicInteger cityLoadSequence,
-            AtomicBoolean simulationBusy, Button startButton, Button pauseButton, Button resumeButton,
-            Button tickButton, Button resetButton, Function<String, java.util.concurrent.CompletableFuture<SimulationStatus>> action) {
+            AtomicBoolean simulationBusy, AtomicBoolean simulationRunning,
+            AtomicReference<String> activeSimulationCityId, Timeline simulationTimer,
+            Button startButton, Button pauseButton, Button resumeButton,
+            Button tickButton, Button resetButton,
+            Function<String, java.util.concurrent.CompletableFuture<SimulationStatus>> action) {
         CitySummary selected = cityList.getSelectionModel().getSelectedItem();
         if (selected == null || !simulationBusy.compareAndSet(false, true)) {
             return;
         }
-        setSimulationButtonsDisabled(true, startButton, pauseButton, resumeButton, tickButton, resetButton);
+        updateSimulationButtons(true, false, simulationRunning.get(),
+                startButton, pauseButton, resumeButton, tickButton, resetButton);
         simulationStatus.setText("Sending simulation command...");
         action.apply(selected.id()).whenComplete((result, failure) -> Platform.runLater(() -> {
             simulationBusy.set(false);
             CitySummary currentSelection = cityList.getSelectionModel().getSelectedItem();
             boolean sameCitySelected = currentSelection != null && selected.id().equals(currentSelection.id());
-            setSimulationButtonsDisabled(currentSelection == null, startButton, pauseButton, resumeButton, tickButton,
-                    resetButton);
-            if (!sameCitySelected) {
+            if (failure != null) {
+                updateSimulationButtons(false, currentSelection == null, simulationRunning.get(),
+                        startButton, pauseButton, resumeButton, tickButton, resetButton);
+                if (sameCitySelected) {
+                    simulationStatus.setText("Simulation request failed: " + errorMessage(failure));
+                }
                 return;
             }
-            if (failure != null) {
-                simulationStatus.setText("Simulation request failed: " + errorMessage(failure));
+            if (result.running()) {
+                String previousActiveCity = activeSimulationCityId.getAndSet(selected.id());
+                if (previousActiveCity != null && !previousActiveCity.equals(selected.id())) {
+                    apiClient.pauseSimulation(previousActiveCity).whenComplete((paused, pauseFailure) -> {
+                        if (pauseFailure != null) {
+                            Platform.runLater(() -> simulationStatus.setText(
+                                    "Could not pause previous city simulation: " + errorMessage(pauseFailure)));
+                        }
+                    });
+                }
+                simulationRunning.set(true);
+                simulationTimer.playFromStart();
+            } else if (selected.id().equals(activeSimulationCityId.get())) {
+                simulationTimerStop(simulationTimer, activeSimulationCityId, simulationRunning);
+            } else {
+                simulationRunning.set(false);
+            }
+            updateSimulationButtons(false, currentSelection == null, simulationRunning.get(),
+                    startButton, pauseButton, resumeButton, tickButton, resetButton);
+            if (!sameCitySelected) {
                 return;
             }
             simulationStatus.setText("Tick " + result.tick() + " · "
@@ -404,13 +523,20 @@ public class SweetDesktopApplication extends Application {
         }));
     }
 
-    private static void setSimulationButtonsDisabled(boolean disabled, Button startButton, Button pauseButton,
-            Button resumeButton, Button tickButton, Button resetButton) {
-        startButton.setDisable(disabled);
-        pauseButton.setDisable(disabled);
-        resumeButton.setDisable(disabled);
-        tickButton.setDisable(disabled);
-        resetButton.setDisable(disabled);
+    private static void updateSimulationButtons(boolean busy, boolean noCitySelected, boolean running,
+            Button startButton, Button pauseButton, Button resumeButton, Button tickButton, Button resetButton) {
+        startButton.setDisable(busy || noCitySelected || running);
+        pauseButton.setDisable(busy || noCitySelected || !running);
+        resumeButton.setDisable(busy || noCitySelected || running);
+        tickButton.setDisable(busy || noCitySelected || running);
+        resetButton.setDisable(busy || noCitySelected);
+    }
+
+    private static void simulationTimerStop(Timeline simulationTimer,
+            AtomicReference<String> activeSimulationCityId, AtomicBoolean simulationRunning) {
+        simulationTimer.stop();
+        activeSimulationCityId.set(null);
+        simulationRunning.set(false);
     }
 
     private static void showSelection(EntitySelection selection, Label inspectorLabel) {

@@ -5,6 +5,9 @@ import java.util.List;
 
 import org.springframework.data.annotation.Id;
 
+import tools.jackson.databind.annotation.JsonDeserialize;
+
+@JsonDeserialize(using = CityDeserializer.class)
 public class City {
 
     @Id

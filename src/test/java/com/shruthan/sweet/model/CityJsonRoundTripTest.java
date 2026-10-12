@@ -1,6 +1,7 @@
 package com.shruthan.sweet.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
@@ -23,5 +24,33 @@ class CityJsonRoundTripTest {
         assertEquals(16, restored.getHeight());
         assertEquals(1, restored.getBuildings().size());
         assertEquals(10, restored.getBuildings().getFirst().getX());
+    }
+
+    @Test
+    void deserializationRejectsBuildingsOutsideTheCityGrid() {
+        JsonMapper mapper = JsonMapper.builder()
+                .enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+                .build();
+        String city = """
+                {
+                  "id": "city-1",
+                  "name": "Downtown",
+                  "width": 10,
+                  "height": 10,
+                  "buildings": [
+                    {
+                      "id": "building-1",
+                      "name": "Tower",
+                      "x": 9,
+                      "y": 6,
+                      "width": 2,
+                      "height": 2,
+                      "type": "RESIDENTIAL"
+                    }
+                  ]
+                }
+                """;
+
+        assertThrows(IllegalArgumentException.class, () -> mapper.readValue(city, City.class));
     }
 }

@@ -4,7 +4,7 @@ Sweet is a Java 25 / Spring Boot city-simulation project that models roads, inte
 
 ## Current state
 
-The repository contains the Spring Boot backend, Cloudflare D1 Worker, React web client, and a JavaFX desktop client under active development.
+The repository contains the Spring Boot backend, Cloudflare D1 Worker, React web client, and JavaFX desktop client.
 
 ### Milestone tracking
 
@@ -14,7 +14,7 @@ The repository contains the Spring Boot backend, Cloudflare D1 Worker, React web
 - Phase 3: simulation engine complete
 - Phase 4: pathfinding and traffic complete
 - Phase 5: Spring Boot REST API complete
-- Phase 6: JavaFX desktop application in progress
+- Phase 6: JavaFX desktop application complete
 
 ## Requirements
 
@@ -38,7 +38,7 @@ The repository contains the Spring Boot backend, Cloudflare D1 Worker, React web
 
 Start the Spring Boot API first. The desktop client uses `http://localhost:8080` by default; set `SWEET_API_BASE_URL` to a different HTTP(S) origin when needed. Create and delete cities from the sidebar; deletion requires confirmation.
 Place vehicles on intersections, then select a vehicle and choose a connected destination; the backend computes and saves the route. Deleting roads or intersections clears affected vehicle routes.
-Simulation ticks now persist vehicle and traffic-light state; Reset restores the engine's starting vehicle and traffic-light state and persists it, while the desktop Step action advances exactly one tick while paused. City edits update an active simulation, and deleting a city removes its active simulation.
+Simulation ticks persist vehicle and traffic-light state; Start and Resume advance the simulation automatically once per second, while Step advances exactly one tick when paused. Reset restores the engine's starting vehicle and traffic-light state and persists it. City edits update an active simulation, and deleting a city removes its active simulation.
 
 ```powershell
 .\mvnw.cmd -f desktop\pom.xml test
