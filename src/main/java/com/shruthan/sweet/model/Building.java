@@ -1,7 +1,5 @@
 package com.shruthan.sweet.model;
 
-import java.util.Objects;
-
 public class Building {
 
     private String id;
@@ -110,27 +108,5 @@ public class Building {
                 && x + width > other.x
                 && y < other.y + other.height
                 && y + height > other.y;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!(obj instanceof Building other)) {
-            return false;
-        }
-        return Objects.equals(id, other.id)
-                && Objects.equals(name, other.name)
-                && x == other.x
-                && y == other.y
-                && width == other.width
-                && height == other.height
-                && type == other.type;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, name, x, y, width, height, type);
     }
 }

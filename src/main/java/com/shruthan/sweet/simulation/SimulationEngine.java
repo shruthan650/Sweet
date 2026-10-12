@@ -60,8 +60,6 @@ public class SimulationEngine {
         for (Vehicle vehicle : city.getVehicles()) {
             vehicle.setStatus(VehicleStatus.IDLE);
             vehicle.setCurrentIntersection(null);
-            vehicle.setRoute(new ArrayList<>());
-            vehicle.setDestination(null);
         }
         events.clear();
     }

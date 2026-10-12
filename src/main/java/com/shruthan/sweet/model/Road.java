@@ -1,7 +1,5 @@
 package com.shruthan.sweet.model;
 
-import java.util.Objects;
-
 public class Road {
 
     private String id;
@@ -143,25 +141,5 @@ public class Road {
             return RoadDirection.DIAGONAL;
         }
         return RoadDirection.UNKNOWN;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!(obj instanceof Road other)) {
-            return false;
-        }
-        return Objects.equals(id, other.id)
-                && Objects.equals(name, other.name)
-                && Objects.equals(start, other.start)
-                && Objects.equals(end, other.end)
-                && type == other.type;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, name, start, end, type);
     }
 }

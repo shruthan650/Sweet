@@ -3,11 +3,11 @@ package com.shruthan.sweet.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import org.springframework.data.annotation.Id;
 
-@JsonPropertyOrder({"id", "name", "width", "height", "roads", "intersections", "vehicles", "buildings"})
 public class City {
 
+    @Id
     private String id;
     private String name;
     private int width;

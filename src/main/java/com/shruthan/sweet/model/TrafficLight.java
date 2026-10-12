@@ -1,7 +1,5 @@
 package com.shruthan.sweet.model;
 
-import java.util.Objects;
-
 public class TrafficLight {
 
     private String id;
@@ -71,24 +69,5 @@ public class TrafficLight {
 
     public boolean canAdvanceTo(TrafficLightState nextState) {
         return this.state.canTransitionTo(nextState);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!(obj instanceof TrafficLight other)) {
-            return false;
-        }
-        return Objects.equals(id, other.id)
-                && Objects.equals(intersection, other.intersection)
-                && state == other.state
-                && cycleDurationSeconds == other.cycleDurationSeconds;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, intersection, state, cycleDurationSeconds);
     }
 }
