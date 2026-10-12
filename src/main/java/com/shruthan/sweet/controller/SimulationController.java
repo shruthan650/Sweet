@@ -40,6 +40,15 @@ public class SimulationController {
         }
     }
 
+    @PostMapping("/cities/{cityId}/step")
+    public ResponseEntity<SimulationStatusDto> step(@PathVariable String cityId) {
+        try {
+            return ResponseEntity.ok(simulationService.step(cityId));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @PostMapping("/cities/{cityId}/pause")
     public ResponseEntity<SimulationStatusDto> pause(@PathVariable String cityId) {
         try {

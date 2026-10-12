@@ -118,6 +118,10 @@ public final class SweetApiClient {
         return simulationAction(cityId, "tick");
     }
 
+    public CompletableFuture<SimulationStatus> stepSimulation(String cityId) {
+        return simulationAction(cityId, "step");
+    }
+
     public CompletableFuture<SimulationStatus> resetSimulation(String cityId) {
         return simulationAction(cityId, "reset");
     }

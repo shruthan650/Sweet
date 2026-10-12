@@ -1,6 +1,7 @@
 package com.shruthan.sweet.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -121,6 +122,24 @@ class SimulationServiceTest {
         service.tick("city-1");
 
         assertEquals(0, repository.updateCount);
+    }
+
+    @Test
+    void stepAdvancesAndPersistsCityWhileSimulationIsPaused() {
+        City city = cityWithRoad(true);
+        InMemoryCityRepository repository = new InMemoryCityRepository(city);
+        SimulationService service = new SimulationService(new CityService(repository));
+        service.assignDestination("city-1", "vehicle-1", "intersection-2");
+        service.pause("city-1");
+        repository.updateCount = 0;
+
+        var status = service.step("city-1");
+
+        assertEquals(1L, status.tick());
+        assertFalse(status.running());
+        assertEquals(5, repository.city.getVehicles().getFirst().getX());
+        assertEquals(VehicleStatus.ARRIVED, repository.city.getVehicles().getFirst().getStatus());
+        assertEquals(1, repository.updateCount);
     }
 
     @Test

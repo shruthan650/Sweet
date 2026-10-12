@@ -80,6 +80,23 @@ class SweetApiClientTest {
     }
 
     @Test
+    void stepSimulationPostsToSingleStepEndpoint() throws IOException {
+        AtomicReference<String> requestMethod = new AtomicReference<>();
+        server.createContext("/api/simulation/cities/city-1/step", exchange -> {
+            requestMethod.set(exchange.getRequestMethod());
+            respond(exchange, 200,
+                    """
+                    {"cityId":"city-1","tick":4,"running":false,"events":["event-4"]}
+                    """);
+        });
+
+        SimulationStatus status = client.stepSimulation("city-1").join();
+
+        assertEquals("POST", requestMethod.get());
+        assertEquals(new SimulationStatus("city-1", 4, false, List.of("event-4")), status);
+    }
+
+    @Test
     void assignDestinationPutsIntersectionIdAndReturnsTheComputedRoute() throws IOException {
         AtomicReference<String> requestMethod = new AtomicReference<>();
         AtomicReference<String> requestBody = new AtomicReference<>();

@@ -137,7 +137,7 @@ public class SweetDesktopApplication extends Application {
                 tickButton, resetButton, apiClient::resumeSimulation));
         tickButton.setOnAction(event -> runSimulationAction(apiClient, cityList, cityCanvas, statusLabel,
                 simulationLabel, currentCity, cityLoadSequence, simulationBusy, startButton, pauseButton, resumeButton,
-                tickButton, resetButton, apiClient::tickSimulation));
+                tickButton, resetButton, apiClient::stepSimulation));
         resetButton.setOnAction(event -> runSimulationAction(apiClient, cityList, cityCanvas, statusLabel,
                 simulationLabel, currentCity, cityLoadSequence, simulationBusy, startButton, pauseButton, resumeButton,
                 tickButton, resetButton, apiClient::resetSimulation));

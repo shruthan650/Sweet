@@ -76,6 +76,14 @@ public class SimulationEngine {
             return;
         }
 
+        advanceOneTick();
+    }
+
+    public void step() {
+        advanceOneTick();
+    }
+
+    private void advanceOneTick() {
         clock.tick();
         updateTrafficLights();
         updateVehicles();

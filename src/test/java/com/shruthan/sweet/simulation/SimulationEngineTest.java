@@ -82,4 +82,27 @@ class SimulationEngineTest {
         assertEquals(0L, engine.getClock().getCurrentTick());
         assertEquals(VehicleStatus.IDLE, vehicle.getStatus());
     }
+
+    @Test
+    void stepAdvancesExactlyOneTickWhilePaused() {
+        City city = new City("city-1", "Downtown", 10, 10);
+        Intersection start = new Intersection("i1", 1, 1);
+        Intersection end = new Intersection("i2", 4, 1);
+        city.addIntersection(start);
+        city.addIntersection(end);
+        city.addRoad(new Road("r1", "Main", start, end, RoadType.STREET));
+        Vehicle vehicle = new Vehicle("v1", "Car", 1, 1, 20);
+        vehicle.setCurrentIntersection(start);
+        vehicle.setRoute(List.of(end));
+        vehicle.setDestination(end);
+        city.addVehicle(vehicle);
+        SimulationEngine engine = new SimulationEngine(city);
+
+        engine.step();
+
+        assertEquals(1L, engine.getClock().getCurrentTick());
+        assertFalse(engine.getClock().isRunning());
+        assertEquals(4, vehicle.getX());
+        assertEquals(VehicleStatus.ARRIVED, vehicle.getStatus());
+    }
 }

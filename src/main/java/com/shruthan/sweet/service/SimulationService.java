@@ -47,6 +47,13 @@ public class SimulationService {
         return toStatus(cityId, engine);
     }
 
+    public SimulationStatusDto step(String cityId) {
+        SimulationEngine engine = getOrCreate(cityId);
+        engine.step();
+        cityService.update(cityId, engine.getCity());
+        return toStatus(cityId, engine);
+    }
+
     public void updateCity(City city) {
         if (city == null || city.getId() == null || city.getId().isBlank()) {
             throw new IllegalArgumentException("City with an id is required");
