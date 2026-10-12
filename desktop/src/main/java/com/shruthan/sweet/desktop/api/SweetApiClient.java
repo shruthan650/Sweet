@@ -13,6 +13,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
@@ -68,6 +69,29 @@ public final class SweetApiClient {
 
     public CompletableFuture<String> createCity(String cityJson) {
         return sendJson("POST", "/api/cities", cityJson);
+    }
+
+    public CompletableFuture<CitySummary> createCity(String name, int width, int height) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("City name is required");
+        }
+        if (width <= 0 || height <= 0) {
+            throw new IllegalArgumentException("City dimensions must be positive");
+        }
+        String requestBody;
+        try {
+            requestBody = OBJECT_MAPPER.writeValueAsString(
+                    new NewCityRequest(UUID.randomUUID().toString(), name.trim(), width, height));
+        } catch (IOException exception) {
+            throw new CompletionException("Could not serialize city request", exception);
+        }
+        return sendJson("POST", "/api/cities", requestBody).thenApply(body -> {
+            try {
+                return OBJECT_MAPPER.readValue(body, CitySummary.class);
+            } catch (IOException exception) {
+                throw new CompletionException("Sweet API returned an invalid city response", exception);
+            }
+        });
     }
 
     public CompletableFuture<String> updateCity(String cityId, String cityJson) {
@@ -198,6 +222,9 @@ public final class SweetApiClient {
     }
 
     private record DestinationRequest(String destinationIntersectionId) {
+    }
+
+    private record NewCityRequest(String id, String name, int width, int height) {
     }
 
     public record VehicleRoute(String vehicleId, String destinationIntersectionId, List<String> route) {

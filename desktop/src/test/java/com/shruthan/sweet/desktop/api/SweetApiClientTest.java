@@ -121,6 +121,32 @@ class SweetApiClientTest {
     }
 
     @Test
+    void createCityPostsDimensionsAndDeserializesCreatedCitySummary() throws IOException {
+        AtomicReference<String> requestMethod = new AtomicReference<>();
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        server.createContext("/api/cities", exchange -> {
+            requestMethod.set(exchange.getRequestMethod());
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(),
+                    java.nio.charset.StandardCharsets.UTF_8));
+            respond(exchange, 201,
+                    """
+                    {"id":"city-new","name":"Harbor","width":24,"height":16,"roads":[]}
+                    """);
+        });
+
+        CitySummary city = client.createCity("Harbor", 24, 16).join();
+
+        assertEquals("POST", requestMethod.get());
+        JsonNode payload = new com.fasterxml.jackson.databind.ObjectMapper().readTree(requestBody.get());
+        assertEquals("Harbor", payload.path("name").asText());
+        assertEquals(24, payload.path("width").asInt());
+        assertEquals(16, payload.path("height").asInt());
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+                () -> java.util.UUID.fromString(payload.path("id").asText()));
+        assertEquals(new CitySummary("city-new", "Harbor", 24, 16), city);
+    }
+
+    @Test
     void failedResponsesExposeTheirHttpStatusAndBody() throws IOException {
         server.createContext("/api/cities", exchange -> respond(exchange, 503, "{\"error\":\"Unavailable\"}"));
 

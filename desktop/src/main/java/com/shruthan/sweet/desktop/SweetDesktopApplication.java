@@ -9,9 +9,15 @@ import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -31,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.UUID;
+import java.util.Optional;
 
 public class SweetDesktopApplication extends Application {
 
@@ -42,6 +49,7 @@ public class SweetDesktopApplication extends Application {
         ListView<CitySummary> cityList = new ListView<>(FXCollections.observableArrayList());
         CityCanvas cityCanvas = new CityCanvas();
         AtomicInteger cityLoadSequence = new AtomicInteger();
+        AtomicInteger cityListLoadSequence = new AtomicInteger();
         AtomicBoolean simulationBusy = new AtomicBoolean();
         AtomicReference<JsonNode> currentCity = new AtomicReference<>();
         AtomicReference<String> currentTool = new AtomicReference<>("select");
@@ -62,7 +70,14 @@ public class SweetDesktopApplication extends Application {
         Button refreshButton = new Button("Refresh");
         refreshButton.setMaxWidth(Double.MAX_VALUE);
         refreshButton.setOnAction(event -> loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton,
-                cityLoadSequence));
+                cityListLoadSequence, null));
+        Button createCityButton = new Button("New city");
+        Button deleteCityButton = new Button("Delete city");
+        deleteCityButton.setDisable(true);
+        createCityButton.setOnAction(event -> showCreateCityDialog(stage, apiClient, cityList, cityCanvas,
+                statusLabel, refreshButton, cityListLoadSequence));
+        deleteCityButton.setOnAction(event -> confirmDeleteCity(stage, apiClient, cityList, cityCanvas,
+                statusLabel, refreshButton, cityListLoadSequence, selectedCity.get(), deleteCityButton));
         Button startButton = new Button("Start");
         Button pauseButton = new Button("Pause");
         Button resumeButton = new Button("Resume");
@@ -106,8 +121,7 @@ public class SweetDesktopApplication extends Application {
             tools.getChildren().add(toolButton);
         }
         Button saveCityButton = new Button("Save city");
-        saveCityButton.setOnAction(event -> saveCity(apiClient, selectedCity.get(), currentCity.get(), cityCanvas,
-                statusLabel));
+        saveCityButton.setOnAction(event -> saveCity(apiClient, selectedCity, currentCity, cityCanvas, statusLabel));
         tools.getChildren().add(saveCityButton);
         saveCityButton.setDisable(true);
         HBox simulationControls = new HBox(8, startButton, pauseButton, resumeButton, tickButton, resetButton);
@@ -129,6 +143,7 @@ public class SweetDesktopApplication extends Application {
                 tickButton, resetButton, apiClient::resetSimulation));
         cityList.getSelectionModel().selectedItemProperty().addListener((observable, previous, selected) -> {
             boolean noCitySelected = selected == null;
+            deleteCityButton.setDisable(noCitySelected);
             startButton.setDisable(noCitySelected || simulationBusy.get());
             pauseButton.setDisable(noCitySelected || simulationBusy.get());
             resumeButton.setDisable(noCitySelected || simulationBusy.get());
@@ -158,7 +173,8 @@ public class SweetDesktopApplication extends Application {
         tickButton.setDisable(true);
         resetButton.setDisable(true);
 
-        VBox sidebar = new VBox(10, new Label("Cities"), refreshButton, cityList, statusLabel);
+        HBox cityActions = new HBox(8, createCityButton, deleteCityButton);
+        VBox sidebar = new VBox(10, new Label("Cities"), refreshButton, cityActions, cityList, statusLabel);
         sidebar.setPadding(new Insets(16));
         sidebar.setPrefWidth(280);
         VBox.setVgrow(cityList, Priority.ALWAYS);
@@ -178,30 +194,134 @@ public class SweetDesktopApplication extends Application {
         stage.setMinHeight(480);
         stage.setScene(scene);
         stage.show();
-        loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton, cityLoadSequence);
+        loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton, cityListLoadSequence, null);
     }
 
     private static void loadCities(SweetApiClient apiClient, ListView<CitySummary> cityList, CityCanvas cityCanvas,
-            Label statusLabel, Button refreshButton, AtomicInteger cityLoadSequence) {
-        cityLoadSequence.incrementAndGet();
+            Label statusLabel, Button refreshButton, AtomicInteger cityListLoadSequence, String preferredCityId) {
+        int sequence = cityListLoadSequence.incrementAndGet();
+        CitySummary previousSelection = cityList.getSelectionModel().getSelectedItem();
         refreshButton.setDisable(true);
         statusLabel.setText("Loading cities...");
         apiClient.listCities().whenComplete((cities, failure) -> Platform.runLater(() -> {
+            if (cityListLoadSequence.get() != sequence) {
+                return;
+            }
             refreshButton.setDisable(false);
             if (failure != null) {
-                cityList.getItems().clear();
-                cityCanvas.setCity(null);
-                statusLabel.setText("Could not load cities: " + errorMessage(failure));
+                statusLabel.setText("Could not refresh cities: " + errorMessage(failure));
                 return;
             }
             cityList.getItems().setAll(cities);
             if (cities.isEmpty()) {
                 cityCanvas.setCity(null);
+                cityList.getSelectionModel().clearSelection();
                 statusLabel.setText("No cities are available.");
             } else {
-                cityList.getSelectionModel().selectFirst();
+                String preferredId = preferredCityId != null ? preferredCityId
+                        : previousSelection == null ? null : previousSelection.id();
+                int selectedIndex = -1;
+                if (preferredId != null) {
+                    for (int index = 0; index < cityList.getItems().size(); index++) {
+                        if (preferredId.equals(cityList.getItems().get(index).id())) {
+                            selectedIndex = index;
+                            break;
+                        }
+                    }
+                }
+                if (selectedIndex >= 0) {
+                    cityList.getSelectionModel().select(selectedIndex);
+                } else {
+                    cityList.getSelectionModel().selectFirst();
+                }
             }
         }));
+    }
+
+    private static void showCreateCityDialog(Stage owner, SweetApiClient apiClient, ListView<CitySummary> cityList,
+            CityCanvas cityCanvas, Label statusLabel, Button refreshButton,
+            AtomicInteger cityListLoadSequence) {
+        Dialog<CityDraft> dialog = new Dialog<>();
+        dialog.initOwner(owner);
+        dialog.setTitle("Create city");
+        dialog.setHeaderText("Choose the name and grid dimensions.");
+        ButtonType createButton = new ButtonType("Create", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(createButton, ButtonType.CANCEL);
+
+        TextField nameField = new TextField();
+        nameField.setPromptText("City name");
+        TextField widthField = new TextField("20");
+        TextField heightField = new TextField("15");
+        GridPane fields = new GridPane();
+        fields.setHgap(10);
+        fields.setVgap(10);
+        fields.addRow(0, new Label("Name"), nameField);
+        fields.addRow(1, new Label("Width"), widthField);
+        fields.addRow(2, new Label("Height"), heightField);
+        dialog.getDialogPane().setContent(fields);
+        dialog.setResultConverter(button -> button == createButton
+                ? new CityDraft(nameField.getText(), widthField.getText(), heightField.getText())
+                : null);
+
+        Optional<CityDraft> draft = dialog.showAndWait();
+        if (draft.isEmpty()) {
+            return;
+        }
+        String name = draft.get().name().trim();
+        int width;
+        int height;
+        try {
+            width = Integer.parseInt(draft.get().width().trim());
+            height = Integer.parseInt(draft.get().height().trim());
+        } catch (NumberFormatException exception) {
+            statusLabel.setText("City width and height must be whole numbers.");
+            return;
+        }
+        if (name.isBlank() || width < 5 || width > 40 || height < 5 || height > 40) {
+            statusLabel.setText("Enter a city name and grid dimensions between 5 and 40.");
+            return;
+        }
+
+        statusLabel.setText("Creating " + name + "...");
+        apiClient.createCity(name, width, height).whenComplete((created, failure) -> Platform.runLater(() -> {
+            if (failure != null) {
+                statusLabel.setText("Could not create city: " + errorMessage(failure));
+                return;
+            }
+            loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton, cityListLoadSequence,
+                    created.id());
+        }));
+    }
+
+    private static void confirmDeleteCity(Stage owner, SweetApiClient apiClient, ListView<CitySummary> cityList,
+            CityCanvas cityCanvas, Label statusLabel, Button refreshButton,
+            AtomicInteger cityListLoadSequence, CitySummary selectedCity, Button deleteCityButton) {
+        if (selectedCity == null) {
+            statusLabel.setText("Select a city before deleting it.");
+            return;
+        }
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION,
+                "Delete " + selectedCity.name() + "? This cannot be undone.",
+                ButtonType.CANCEL, ButtonType.OK);
+        confirmation.initOwner(owner);
+        confirmation.setTitle("Delete city");
+        confirmation.setHeaderText("Delete city");
+        if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+            return;
+        }
+        deleteCityButton.setDisable(true);
+        statusLabel.setText("Deleting " + selectedCity.name() + "...");
+        apiClient.deleteCity(selectedCity.id()).whenComplete((ignored, failure) -> Platform.runLater(() -> {
+            deleteCityButton.setDisable(cityList.getSelectionModel().getSelectedItem() == null);
+            if (failure != null) {
+                statusLabel.setText("Could not delete city: " + errorMessage(failure));
+                return;
+            }
+            loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton, cityListLoadSequence, null);
+        }));
+    }
+
+    private record CityDraft(String name, String width, String height) {
     }
 
     private static void loadCity(SweetApiClient apiClient, CitySummary city, CityCanvas cityCanvas,
@@ -225,21 +345,32 @@ public class SweetDesktopApplication extends Application {
         }));
     }
 
-    private static void saveCity(SweetApiClient apiClient, CitySummary selectedCity, JsonNode city,
+    private static void saveCity(SweetApiClient apiClient, AtomicReference<CitySummary> selectedCity,
+            AtomicReference<JsonNode> currentCity,
             CityCanvas cityCanvas, Label statusLabel) {
-        if (selectedCity == null || city == null) {
+        CitySummary citySummary = selectedCity.get();
+        JsonNode city = currentCity.get();
+        if (citySummary == null || city == null) {
             statusLabel.setText("Select a saved city before saving changes.");
             return;
         }
-        statusLabel.setText("Saving " + selectedCity.name() + "...");
-        apiClient.updateCity(selectedCity.id(), city.toString()).whenComplete((saved, failure) ->
+        String submittedSnapshot = city.toString();
+        statusLabel.setText("Saving " + citySummary.name() + "...");
+        apiClient.updateCity(citySummary.id(), submittedSnapshot).whenComplete((saved, failure) ->
                 Platform.runLater(() -> {
+                    CitySummary currentSelection = selectedCity.get();
+                    if (currentCity.get() != city || currentSelection == null
+                            || !citySummary.id().equals(currentSelection.id())) {
+                        return;
+                    }
                     if (failure != null) {
                         statusLabel.setText("Could not save city: " + errorMessage(failure));
                         return;
                     }
                     cityCanvas.refresh();
-                    statusLabel.setText("City saved successfully.");
+                    statusLabel.setText(city.toString().equals(submittedSnapshot)
+                            ? "City saved successfully."
+                            : "Earlier edits were saved; newer changes still need saving.");
                 }));
     }
 
@@ -461,11 +592,11 @@ public class SweetDesktopApplication extends Application {
         statusLabel.setText("Calculating route to " + destination.path("name").asText() + "...");
         apiClient.assignDestination(selectedCity.id(), vehicleId, destinationId)
                 .whenComplete((computedRoute, failure) -> Platform.runLater(() -> {
-                    if (failure != null) {
-                        statusLabel.setText("Could not assign destination: " + errorMessage(failure));
+                    if (currentCity.get() != cityNode) {
                         return;
                     }
-                    if (currentCity.get() != cityNode) {
+                    if (failure != null) {
+                        statusLabel.setText("Could not assign destination: " + errorMessage(failure));
                         return;
                     }
                     ObjectNode updatedVehicle = findById(array(city, "vehicles"), computedRoute.vehicleId());
@@ -507,10 +638,15 @@ public class SweetDesktopApplication extends Application {
         if (collection == null) {
             return;
         }
-        array(city, collection).removeIf(entity -> id.equals(entity.path("id").asText()));
         if ("Road".equals(selection.kind())) {
+            ObjectNode removedRoad = findById(array(city, "roads"), id);
+            array(city, collection).removeIf(entity -> id.equals(entity.path("id").asText()));
             removeRoadLinks(city, id);
+            if (removedRoad != null) {
+                invalidateRoutesUsingRoad(city, removedRoad);
+            }
         } else if ("Intersection".equals(selection.kind())) {
+            array(city, collection).removeIf(entity -> id.equals(entity.path("id").asText()));
             ArrayNode roads = array(city, "roads");
             for (int index = roads.size() - 1; index >= 0; index--) {
                 JsonNode road = roads.get(index);
@@ -522,19 +658,65 @@ public class SweetDesktopApplication extends Application {
             }
             for (JsonNode vehicle : array(city, "vehicles")) {
                 ObjectNode editableVehicle = (ObjectNode) vehicle;
-                if (id.equals(relationId(vehicle.path("currentIntersection")))) {
+                boolean currentIntersectionRemoved = id.equals(relationId(vehicle.path("currentIntersection")));
+                boolean routeUsesIntersection = id.equals(relationId(vehicle.path("destination")))
+                        || routeContainsIntersection(vehicle.path("route"), id);
+                if (currentIntersectionRemoved) {
                     editableVehicle.putNull("currentIntersection");
                 }
-                if (id.equals(relationId(vehicle.path("destination")))) {
-                    editableVehicle.putNull("destination");
-                    editableVehicle.set("route", city.arrayNode());
-                    editableVehicle.put("status", "IDLE");
+                if (currentIntersectionRemoved || routeUsesIntersection) {
+                    clearVehicleRoute(city, editableVehicle);
                 }
             }
+        } else {
+            array(city, collection).removeIf(entity -> id.equals(entity.path("id").asText()));
         }
         cityCanvas.clearSelection();
         statusLabel.setText(selection.kind() + " removed.");
         cityCanvas.refresh();
+    }
+
+    private static void invalidateRoutesUsingRoad(ObjectNode city, ObjectNode road) {
+        String roadStartId = relationId(road.path("start"));
+        String roadEndId = relationId(road.path("end"));
+        boolean bidirectional = road.path("bidirectional").asBoolean();
+        for (JsonNode vehicle : array(city, "vehicles")) {
+            ObjectNode editableVehicle = (ObjectNode) vehicle;
+            JsonNode currentIntersection = vehicle.path("currentIntersection");
+            JsonNode start = findIntersectionAt(array(city, "intersections"),
+                    vehicle.path("x").asInt(), vehicle.path("y").asInt());
+            String previousId = currentIntersection.isNull() || currentIntersection.isMissingNode()
+                    ? start == null ? "" : start.path("id").asText()
+                    : relationId(currentIntersection);
+            boolean routeUsesRoad = false;
+            for (JsonNode next : vehicle.path("route")) {
+                String nextId = relationId(next);
+                if ((roadStartId.equals(previousId) && roadEndId.equals(nextId))
+                        || (bidirectional && roadEndId.equals(previousId) && roadStartId.equals(nextId))) {
+                    routeUsesRoad = true;
+                    break;
+                }
+                previousId = nextId;
+            }
+            if (routeUsesRoad) {
+                clearVehicleRoute(city, editableVehicle);
+            }
+        }
+    }
+
+    private static boolean routeContainsIntersection(JsonNode route, String intersectionId) {
+        for (JsonNode intersection : route) {
+            if (intersectionId.equals(relationId(intersection))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void clearVehicleRoute(ObjectNode city, ObjectNode vehicle) {
+        vehicle.putNull("destination");
+        vehicle.set("route", city.arrayNode());
+        vehicle.put("status", "IDLE");
     }
 
     private static ArrayNode array(ObjectNode city, String field) {
