@@ -56,6 +56,16 @@ public final class SweetApiClient {
         return send("GET", "/api/cities/" + encodePathSegment(cityId));
     }
 
+    public CompletableFuture<com.fasterxml.jackson.databind.JsonNode> getCityDetails(String cityId) {
+        return send("GET", "/api/cities/" + encodePathSegment(cityId)).thenApply(body -> {
+            try {
+                return OBJECT_MAPPER.readTree(body);
+            } catch (IOException exception) {
+                throw new CompletionException("Sweet API returned an invalid city response", exception);
+            }
+        });
+    }
+
     public CompletableFuture<String> createCity(String cityJson) {
         return sendJson("POST", "/api/cities", cityJson);
     }
@@ -68,28 +78,35 @@ public final class SweetApiClient {
         return send("DELETE", "/api/cities/" + encodePathSegment(cityId)).thenApply(response -> null);
     }
 
-    public CompletableFuture<String> startSimulation(String cityId) {
+    public CompletableFuture<SimulationStatus> startSimulation(String cityId) {
         return simulationAction(cityId, "start");
     }
 
-    public CompletableFuture<String> pauseSimulation(String cityId) {
+    public CompletableFuture<SimulationStatus> pauseSimulation(String cityId) {
         return simulationAction(cityId, "pause");
     }
 
-    public CompletableFuture<String> resumeSimulation(String cityId) {
+    public CompletableFuture<SimulationStatus> resumeSimulation(String cityId) {
         return simulationAction(cityId, "resume");
     }
 
-    public CompletableFuture<String> tickSimulation(String cityId) {
+    public CompletableFuture<SimulationStatus> tickSimulation(String cityId) {
         return simulationAction(cityId, "tick");
     }
 
-    public CompletableFuture<String> resetSimulation(String cityId) {
+    public CompletableFuture<SimulationStatus> resetSimulation(String cityId) {
         return simulationAction(cityId, "reset");
     }
 
-    private CompletableFuture<String> simulationAction(String cityId, String action) {
-        return send("POST", "/api/simulation/cities/" + encodePathSegment(cityId) + "/" + action);
+    private CompletableFuture<SimulationStatus> simulationAction(String cityId, String action) {
+        return send("POST", "/api/simulation/cities/" + encodePathSegment(cityId) + "/" + action)
+                .thenApply(body -> {
+                    try {
+                        return OBJECT_MAPPER.readValue(body, SimulationStatus.class);
+                    } catch (IOException exception) {
+                        throw new CompletionException("Sweet API returned an invalid simulation response", exception);
+                    }
+                });
     }
 
     private CompletableFuture<String> send(String method, String path) {
