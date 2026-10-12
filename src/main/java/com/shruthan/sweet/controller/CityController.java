@@ -15,15 +15,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.shruthan.sweet.model.City;
 import com.shruthan.sweet.service.CityService;
+import com.shruthan.sweet.service.SimulationService;
 
 @RestController
 @RequestMapping("/api/cities")
 public class CityController {
 
     private final CityService cityService;
+    private final SimulationService simulationService;
 
-    public CityController(CityService cityService) {
+    public CityController(CityService cityService, SimulationService simulationService) {
         this.cityService = cityService;
+        this.simulationService = simulationService;
     }
 
     @GetMapping
@@ -45,12 +48,15 @@ public class CityController {
 
     @PutMapping("/{id}")
     public ResponseEntity<City> updateCity(@PathVariable String id, @RequestBody City city) {
-        return ResponseEntity.ok(cityService.update(id, city));
+        City updatedCity = cityService.update(id, city);
+        simulationService.updateCity(updatedCity);
+        return ResponseEntity.ok(updatedCity);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCity(@PathVariable String id) {
         cityService.delete(id);
+        simulationService.removeCity(id);
         return ResponseEntity.noContent().build();
     }
 }

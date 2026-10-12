@@ -3,8 +3,10 @@ package com.shruthan.sweet.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -33,7 +35,8 @@ class SimulationServiceTest {
         Vehicle persistedVehicle = repository.city.getVehicles().getFirst();
         assertEquals("intersection-1", persistedVehicle.getCurrentIntersection().getId());
         assertEquals(List.of("intersection-2"),
-                persistedVehicle.getRoute().stream().map(Intersection::getId).toList());
+                persistedVehicle.getRoute().stream().filter(Objects::nonNull)
+                        .map(intersection -> intersection.getId()).toList());
         assertEquals("intersection-2", persistedVehicle.getDestination().getId());
         assertEquals(VehicleStatus.MOVING, persistedVehicle.getStatus());
     }
@@ -88,6 +91,55 @@ class SimulationServiceTest {
         assertNull(vehicle.getDestination());
     }
 
+    @Test
+    void runningTickPersistsVehiclePositionAndRemainingRoute() {
+        City city = cityWithRoad(true);
+        InMemoryCityRepository repository = new InMemoryCityRepository(city);
+        SimulationService service = new SimulationService(new CityService(repository));
+        service.assignDestination("city-1", "vehicle-1", "intersection-2");
+        service.start("city-1");
+
+        var status = service.tick("city-1");
+
+        Vehicle persistedVehicle = repository.city.getVehicles().getFirst();
+        assertEquals(1L, status.tick());
+        assertEquals(5, persistedVehicle.getX());
+        assertEquals(1, persistedVehicle.getY());
+        assertEquals("intersection-2", persistedVehicle.getCurrentIntersection().getId());
+        assertTrue(persistedVehicle.getRoute().isEmpty());
+        assertEquals(VehicleStatus.ARRIVED, persistedVehicle.getStatus());
+    }
+
+    @Test
+    void pausedTickDoesNotWriteCityToRepository() {
+        City city = cityWithRoad(true);
+        InMemoryCityRepository repository = new InMemoryCityRepository(city);
+        SimulationService service = new SimulationService(new CityService(repository));
+        service.pause("city-1");
+        repository.updateCount = 0;
+
+        service.tick("city-1");
+
+        assertEquals(0, repository.updateCount);
+    }
+
+    @Test
+    void cityUpdatesReplaceTheCityUsedByAnActiveEngine() {
+        City initialCity = cityWithRoad(true);
+        InMemoryCityRepository repository = new InMemoryCityRepository(initialCity);
+        SimulationService service = new SimulationService(new CityService(repository));
+        service.start("city-1");
+        City updatedCity = cityWithRoad(true);
+        updatedCity.setName("Updated City");
+        updatedCity.getVehicles().getFirst().setX(5);
+        service.updateCity(updatedCity);
+
+        service.tick("city-1");
+
+        assertEquals("Updated City", repository.city.getName());
+        assertEquals(5, repository.city.getVehicles().getFirst().getX());
+    }
+
     private static City cityWithRoad(boolean connected) {
         City city = new City("city-1", "Test City", 10, 10);
         Intersection start = new Intersection("intersection-1", 1, 1);
@@ -108,6 +160,7 @@ class SimulationServiceTest {
     private static final class InMemoryCityRepository implements CityRepository {
 
         private City city;
+        private int updateCount;
 
         private InMemoryCityRepository(City city) {
             this.city = city;
@@ -132,6 +185,7 @@ class SimulationServiceTest {
         @Override
         public City update(String id, City value) {
             city = value;
+            updateCount++;
             return city;
         }
 

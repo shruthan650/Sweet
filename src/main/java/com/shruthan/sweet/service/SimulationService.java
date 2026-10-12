@@ -39,8 +39,29 @@ public class SimulationService {
 
     public SimulationStatusDto tick(String cityId) {
         SimulationEngine engine = getOrCreate(cityId);
+        long previousTick = engine.getClock().getCurrentTick();
         engine.tick();
+        if (engine.getClock().getCurrentTick() != previousTick) {
+            cityService.update(cityId, engine.getCity());
+        }
         return toStatus(cityId, engine);
+    }
+
+    public void updateCity(City city) {
+        if (city == null || city.getId() == null || city.getId().isBlank()) {
+            throw new IllegalArgumentException("City with an id is required");
+        }
+        SimulationEngine engine = engines.get(city.getId());
+        if (engine != null) {
+            engine.updateCity(city);
+        }
+    }
+
+    public void removeCity(String cityId) {
+        if (cityId == null || cityId.isBlank()) {
+            throw new IllegalArgumentException("City id is required");
+        }
+        engines.remove(cityId);
     }
 
     public SimulationStatusDto pause(String cityId) {
@@ -93,7 +114,8 @@ public class SimulationService {
         vehicle.setStatus(start.getId().equals(destination.getId()) ? VehicleStatus.ARRIVED : VehicleStatus.MOVING);
         cityService.update(cityId, city);
         List<String> routeIds = vehicle.getRoute().stream()
-                .map(Intersection::getId)
+                .filter(Objects::nonNull)
+                .map(intersection -> intersection.getId())
                 .collect(Collectors.toUnmodifiableList());
         return new VehicleRouteDto(vehicle.getId(), destination.getId(), routeIds);
     }

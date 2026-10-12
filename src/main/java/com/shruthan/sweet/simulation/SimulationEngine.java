@@ -11,7 +11,7 @@ import com.shruthan.sweet.model.VehicleStatus;
 
 public class SimulationEngine {
 
-    private final City city;
+    private City city;
     private final SimulationClock clock;
     private final List<SimulationEvent> events = new ArrayList<>();
 
@@ -33,6 +33,13 @@ public class SimulationEngine {
 
     public City getCity() {
         return city;
+    }
+
+    public void updateCity(City city) {
+        if (city == null) {
+            throw new IllegalArgumentException("City is required");
+        }
+        this.city = city;
     }
 
     public SimulationClock getClock() {
