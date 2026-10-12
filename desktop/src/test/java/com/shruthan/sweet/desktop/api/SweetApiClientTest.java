@@ -80,6 +80,30 @@ class SweetApiClientTest {
     }
 
     @Test
+    void assignDestinationPutsIntersectionIdAndReturnsTheComputedRoute() throws IOException {
+        AtomicReference<String> requestMethod = new AtomicReference<>();
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        server.createContext("/api/simulation/cities/city-1/vehicles/vehicle-1/destination", exchange -> {
+            requestMethod.set(exchange.getRequestMethod());
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(),
+                    java.nio.charset.StandardCharsets.UTF_8));
+            respond(exchange, 200,
+                    """
+                    {"vehicleId":"vehicle-1","destinationIntersectionId":"intersection-3",
+                     "route":["intersection-2","intersection-3"]}
+                    """);
+        });
+
+        SweetApiClient.VehicleRoute route = client
+                .assignDestination("city-1", "vehicle-1", "intersection-3").join();
+
+        assertEquals("PUT", requestMethod.get());
+        assertEquals("{\"destinationIntersectionId\":\"intersection-3\"}", requestBody.get());
+        assertEquals(new SweetApiClient.VehicleRoute("vehicle-1", "intersection-3",
+                List.of("intersection-2", "intersection-3")), route);
+    }
+
+    @Test
     void updateCityPutsJsonToTheSelectedCityRoute() throws IOException {
         AtomicReference<String> method = new AtomicReference<>();
         AtomicReference<String> requestBody = new AtomicReference<>();

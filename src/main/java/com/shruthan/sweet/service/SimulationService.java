@@ -3,13 +3,20 @@ package com.shruthan.sweet.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.shruthan.sweet.algorithm.PathFinder;
 import com.shruthan.sweet.dto.SimulationStatusDto;
+import com.shruthan.sweet.dto.VehicleRouteDto;
 import com.shruthan.sweet.model.City;
+import com.shruthan.sweet.model.Intersection;
+import com.shruthan.sweet.model.Vehicle;
+import com.shruthan.sweet.model.VehicleStatus;
 import com.shruthan.sweet.simulation.SimulationEngine;
 
 @Service
@@ -54,6 +61,43 @@ public class SimulationService {
         return toStatus(cityId, engine);
     }
 
+    public VehicleRouteDto assignDestination(String cityId, String vehicleId, String destinationIntersectionId) {
+        SimulationEngine engine = engines.get(cityId);
+        City city = engine == null ? loadCity(cityId) : engine.getCity();
+        Vehicle vehicle = city.getVehicles().stream()
+                .filter(candidate -> candidate != null && Objects.equals(candidate.getId(), vehicleId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Vehicle not found: " + vehicleId));
+        Intersection destination = findIntersection(city, destinationIntersectionId);
+        Intersection vehiclePosition = vehicle.getCurrentIntersection();
+        Intersection start = vehiclePosition != null
+                && vehiclePosition.getX() == vehicle.getX()
+                && vehiclePosition.getY() == vehicle.getY()
+                        ? findIntersectionOrNull(city, vehiclePosition.getId())
+                        : null;
+        if (start == null) {
+            start = city.getIntersections().stream()
+                    .filter(intersection -> intersection.getX() == vehicle.getX()
+                            && intersection.getY() == vehicle.getY())
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Vehicle must be positioned at an intersection before assigning a destination"));
+        }
+        List<Intersection> path = PathFinder.findWeightedPath(city, start, destination);
+        if (path.isEmpty()) {
+            throw new IllegalArgumentException("No route connects the vehicle to the destination");
+        }
+        vehicle.setCurrentIntersection(start);
+        vehicle.setDestination(destination);
+        vehicle.setRoute(path.subList(1, path.size()));
+        vehicle.setStatus(start.getId().equals(destination.getId()) ? VehicleStatus.ARRIVED : VehicleStatus.MOVING);
+        cityService.update(cityId, city);
+        List<String> routeIds = vehicle.getRoute().stream()
+                .map(Intersection::getId)
+                .collect(Collectors.toUnmodifiableList());
+        return new VehicleRouteDto(vehicle.getId(), destination.getId(), routeIds);
+    }
+
     private City loadCity(String cityId) {
         Optional<City> city = cityService.findById(cityId);
         if (city.isEmpty()) {
@@ -64,6 +108,21 @@ public class SimulationService {
 
     private SimulationEngine getOrCreate(String cityId) {
         return engines.computeIfAbsent(cityId, ignored -> new SimulationEngine(loadCity(cityId)));
+    }
+
+    private static Intersection findIntersection(City city, String intersectionId) {
+        Intersection intersection = findIntersectionOrNull(city, intersectionId);
+        if (intersection == null) {
+            throw new IllegalArgumentException("Destination intersection not found: " + intersectionId);
+        }
+        return intersection;
+    }
+
+    private static Intersection findIntersectionOrNull(City city, String intersectionId) {
+        return city.getIntersections().stream()
+                .filter(intersection -> intersection != null && Objects.equals(intersection.getId(), intersectionId))
+                .findFirst()
+                .orElse(null);
     }
 
     private SimulationStatusDto toStatus(String cityId, SimulationEngine engine) {

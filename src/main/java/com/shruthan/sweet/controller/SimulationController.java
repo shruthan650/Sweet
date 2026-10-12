@@ -3,10 +3,13 @@ package com.shruthan.sweet.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.shruthan.sweet.dto.SimulationStatusDto;
+import com.shruthan.sweet.dto.VehicleRouteDto;
 import com.shruthan.sweet.service.SimulationService;
 
 @RestController
@@ -62,5 +65,21 @@ public class SimulationController {
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @PutMapping("/cities/{cityId}/vehicles/{vehicleId}/destination")
+    public ResponseEntity<VehicleRouteDto> assignDestination(
+            @PathVariable String cityId,
+            @PathVariable String vehicleId,
+            @RequestBody DestinationRequest request) {
+        if (request == null || request.destinationIntersectionId() == null
+                || request.destinationIntersectionId().isBlank()) {
+            throw new IllegalArgumentException("Destination intersection id is required");
+        }
+        return ResponseEntity.ok(simulationService.assignDestination(
+                cityId, vehicleId, request.destinationIntersectionId()));
+    }
+
+    public record DestinationRequest(String destinationIntersectionId) {
     }
 }

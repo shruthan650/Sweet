@@ -98,6 +98,28 @@ public final class SweetApiClient {
         return simulationAction(cityId, "reset");
     }
 
+    public CompletableFuture<VehicleRoute> assignDestination(
+            String cityId, String vehicleId, String destinationIntersectionId) {
+        if (destinationIntersectionId == null || destinationIntersectionId.isBlank()) {
+            throw new IllegalArgumentException("Destination intersection id is required");
+        }
+        String requestBody;
+        try {
+            requestBody = OBJECT_MAPPER.writeValueAsString(new DestinationRequest(destinationIntersectionId));
+        } catch (IOException exception) {
+            throw new CompletionException("Could not serialize destination request", exception);
+        }
+        String path = "/api/simulation/cities/" + encodePathSegment(cityId)
+                + "/vehicles/" + encodePathSegment(vehicleId) + "/destination";
+        return sendJson("PUT", path, requestBody).thenApply(body -> {
+            try {
+                return OBJECT_MAPPER.readValue(body, VehicleRoute.class);
+            } catch (IOException exception) {
+                throw new CompletionException("Sweet API returned an invalid vehicle route response", exception);
+            }
+        });
+    }
+
     private CompletableFuture<SimulationStatus> simulationAction(String cityId, String action) {
         return send("POST", "/api/simulation/cities/" + encodePathSegment(cityId) + "/" + action)
                 .thenApply(body -> {
@@ -173,5 +195,11 @@ public final class SweetApiClient {
         public int getStatusCode() {
             return statusCode;
         }
+    }
+
+    private record DestinationRequest(String destinationIntersectionId) {
+    }
+
+    public record VehicleRoute(String vehicleId, String destinationIntersectionId, List<String> route) {
     }
 }

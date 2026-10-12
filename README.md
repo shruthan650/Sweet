@@ -37,6 +37,7 @@ The repository contains the Spring Boot backend, Cloudflare D1 Worker, React web
 ## Run the desktop client
 
 Start the Spring Boot API first. The desktop client uses `http://localhost:8080` by default; set `SWEET_API_BASE_URL` to a different HTTP(S) origin when needed.
+Place vehicles on intersections, then select a vehicle and choose a connected destination; the backend computes and saves the route.
 
 ```powershell
 .\mvnw.cmd -f desktop\pom.xml test

@@ -35,6 +35,8 @@ public final class PathFinder {
 
     private static List<Intersection> bfs(City city, Intersection start, Intersection end) {
         validate(city, start, end);
+        start = canonicalIntersection(city, start);
+        end = canonicalIntersection(city, end);
         Map<Intersection, Intersection> previous = new HashMap<>();
         Deque<Intersection> queue = new ArrayDeque<>();
         Set<Intersection> visited = new HashSet<>();
@@ -44,7 +46,7 @@ public final class PathFinder {
 
         while (!queue.isEmpty()) {
             Intersection current = queue.removeFirst();
-            if (current.equals(end)) {
+            if (sameIntersection(current, end)) {
                 return reconstructPath(previous, end);
             }
             for (Intersection neighbor : neighbors(city, current)) {
@@ -60,6 +62,8 @@ public final class PathFinder {
 
     private static List<Intersection> dijkstra(City city, Intersection start, Intersection end) {
         validate(city, start, end);
+        start = canonicalIntersection(city, start);
+        end = canonicalIntersection(city, end);
         Map<Intersection, Integer> distance = new HashMap<>();
         Map<Intersection, Intersection> previous = new HashMap<>();
         PriorityQueue<Node> queue = new PriorityQueue<>((a, b) -> Integer.compare(a.distance, b.distance));
@@ -72,7 +76,7 @@ public final class PathFinder {
 
         while (!queue.isEmpty()) {
             Node current = queue.poll();
-            if (current.intersection.equals(end)) {
+            if (sameIntersection(current.intersection, end)) {
                 return reconstructPath(previous, end);
             }
             for (Intersection neighbor : neighbors(city, current.intersection)) {
@@ -91,19 +95,27 @@ public final class PathFinder {
     private static List<Intersection> neighbors(City city, Intersection intersection) {
         List<Intersection> neighbors = new ArrayList<>();
         for (Road road : city.getRoads()) {
-            if (Objects.equals(road.getStart(), intersection)) {
-                neighbors.add(road.getEnd());
-            } else if (Objects.equals(road.getEnd(), intersection)) {
-                neighbors.add(road.getStart());
+            if (sameIntersection(road.getStart(), intersection)) {
+                addCanonicalNeighbor(city, neighbors, road.getEnd());
+            } else if (road.isBidirectional() && sameIntersection(road.getEnd(), intersection)) {
+                addCanonicalNeighbor(city, neighbors, road.getStart());
             }
         }
         return neighbors;
     }
 
+    private static void addCanonicalNeighbor(City city, List<Intersection> neighbors, Intersection candidate) {
+        city.getIntersections().stream()
+                .filter(intersection -> sameIntersection(intersection, candidate))
+                .findFirst()
+                .ifPresent(neighbors::add);
+    }
+
     private static int getRoadWeight(City city, Intersection from, Intersection to) {
         for (Road road : city.getRoads()) {
-            if ((Objects.equals(road.getStart(), from) && Objects.equals(road.getEnd(), to))
-                    || (Objects.equals(road.getEnd(), from) && Objects.equals(road.getStart(), to))) {
+            if ((sameIntersection(road.getStart(), from) && sameIntersection(road.getEnd(), to))
+                    || (road.isBidirectional()
+                            && sameIntersection(road.getEnd(), from) && sameIntersection(road.getStart(), to))) {
                 return road.getLength();
             }
         }
@@ -131,6 +143,19 @@ public final class PathFinder {
         if (city.getIntersections().isEmpty()) {
             throw new IllegalArgumentException("City does not have any intersections");
         }
+    }
+
+    private static boolean sameIntersection(Intersection first, Intersection second) {
+        return first == second || (first != null && second != null
+                && Objects.equals(first.getId(), second.getId()));
+    }
+
+    private static Intersection canonicalIntersection(City city, Intersection intersection) {
+        return city.getIntersections().stream()
+                .filter(candidate -> sameIntersection(candidate, intersection))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Intersection is not part of city: " + intersection.getId()));
     }
 
     private record Node(Intersection intersection, int distance) {

@@ -88,7 +88,8 @@ public class SweetDesktopApplication extends Application {
             } else if ("road".equals(currentTool.get()) && selection != null) {
                 connectRoad(currentCity.get(), selection, roadStart, statusLabel, cityCanvas);
             } else if ("destination".equals(currentTool.get()) && selection != null) {
-                assignDestination(currentCity.get(), selectedVehicle.get(), selection, statusLabel, cityCanvas);
+                assignDestination(apiClient, selectedCity.get(), currentCity, selectedVehicle.get(),
+                        selection, statusLabel, cityCanvas);
             }
         });
         cityCanvas.setGridClickHandler((x, y) -> placeEntity(currentCity.get(), currentTool.get(),
@@ -360,6 +361,11 @@ public class SweetDesktopApplication extends Application {
             statusLabel.setText("Building placed at " + x + ", " + y + ".");
         } else if ("vehicle".equals(tool)) {
             ArrayNode vehicles = array(city, "vehicles");
+            JsonNode intersection = findIntersectionAt(intersections, x, y);
+            if (intersection == null) {
+                statusLabel.setText("Vehicles must be placed on an intersection.");
+                return;
+            }
             ObjectNode vehicle = city.objectNode();
             vehicle.put("id", newId("vehicle"));
             vehicle.put("name", "Vehicle " + (vehicles.size() + 1));
@@ -367,12 +373,7 @@ public class SweetDesktopApplication extends Application {
             vehicle.put("y", y);
             vehicle.put("speedKph", 30);
             vehicle.put("status", "IDLE");
-            JsonNode intersection = findIntersectionAt(intersections, x, y);
-            if (intersection == null) {
-                vehicle.putNull("currentIntersection");
-            } else {
-                vehicle.set("currentIntersection", minimalIntersection(city, intersection));
-            }
+            vehicle.set("currentIntersection", minimalIntersection(city, intersection));
             vehicle.set("route", city.arrayNode());
             vehicle.putNull("destination");
             vehicles.add(vehicle);
@@ -437,9 +438,11 @@ public class SweetDesktopApplication extends Application {
         cityCanvas.refresh();
     }
 
-    private static void assignDestination(JsonNode cityNode, JsonNode vehicle, EntitySelection selection,
+    private static void assignDestination(SweetApiClient apiClient, CitySummary selectedCity,
+            AtomicReference<JsonNode> currentCity, JsonNode vehicle, EntitySelection selection,
             Label statusLabel, CityCanvas cityCanvas) {
-        if (!(cityNode instanceof ObjectNode city) || vehicle == null) {
+        JsonNode cityNode = currentCity.get();
+        if (!(cityNode instanceof ObjectNode city) || vehicle == null || selectedCity == null) {
             statusLabel.setText("Select a vehicle first, then choose the Destination tool.");
             return;
         }
@@ -453,13 +456,39 @@ public class SweetDesktopApplication extends Application {
             return;
         }
         JsonNode destination = selection.entity();
-        editableVehicle.set("destination", minimalIntersection(city, destination));
-        ArrayNode route = city.arrayNode();
-        route.add(minimalIntersection(city, destination));
-        editableVehicle.set("route", route);
-        editableVehicle.put("status", "MOVING");
-        statusLabel.setText("Destination set to " + destination.path("name").asText() + ".");
-        cityCanvas.refresh();
+        String vehicleId = editableVehicle.path("id").asText();
+        String destinationId = destination.path("id").asText();
+        statusLabel.setText("Calculating route to " + destination.path("name").asText() + "...");
+        apiClient.assignDestination(selectedCity.id(), vehicleId, destinationId)
+                .whenComplete((computedRoute, failure) -> Platform.runLater(() -> {
+                    if (failure != null) {
+                        statusLabel.setText("Could not assign destination: " + errorMessage(failure));
+                        return;
+                    }
+                    if (currentCity.get() != cityNode) {
+                        return;
+                    }
+                    ObjectNode updatedVehicle = findById(array(city, "vehicles"), computedRoute.vehicleId());
+                    JsonNode resolvedDestination = findById(array(city, "intersections"),
+                            computedRoute.destinationIntersectionId());
+                    if (updatedVehicle == null || resolvedDestination == null) {
+                        statusLabel.setText("The vehicle or destination is no longer in this city.");
+                        return;
+                    }
+                    updatedVehicle.set("destination", minimalIntersection(city, resolvedDestination));
+                    ArrayNode route = city.arrayNode();
+                    for (String intersectionId : computedRoute.route()) {
+                        JsonNode intersection = findById(array(city, "intersections"), intersectionId);
+                        if (intersection != null) {
+                            route.add(minimalIntersection(city, intersection));
+                        }
+                    }
+                    updatedVehicle.set("route", route);
+                    updatedVehicle.put("status", route.isEmpty() ? "ARRIVED" : "MOVING");
+                    statusLabel.setText("Route set to " + resolvedDestination.path("name").asText()
+                            + " (" + route.size() + " steps).");
+                    cityCanvas.refresh();
+                }));
     }
 
     private static void eraseEntity(JsonNode cityNode, EntitySelection selection,
@@ -589,7 +618,7 @@ public class SweetDesktopApplication extends Application {
             case "intersection" -> "Click an empty grid cell to place an intersection.";
             case "road" -> "Select two intersections to connect with a road.";
             case "building" -> "Click an empty grid cell to place a building.";
-            case "vehicle" -> "Click a grid cell to place a vehicle.";
+            case "vehicle" -> "Click an intersection to place a vehicle.";
             case "destination" -> "Select a vehicle, then click an intersection.";
             case "erase" -> "Click a map feature to remove it.";
             default -> "Click a map feature to inspect it.";
