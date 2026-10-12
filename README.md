@@ -4,7 +4,7 @@ Sweet is a Java 25 / Spring Boot city-simulation project that models roads, inte
 
 ## Current state
 
-The repository contains the Spring Boot backend, Cloudflare D1 Worker, React web client, and JavaFX desktop client.
+The active application is the Spring Boot backend, Cloudflare D1 Worker, and JavaFX desktop client. The existing React/Vite files are retained in the repository but are outside the current development scope; no web frontend or Vercel deployment work is planned.
 
 ### Milestone tracking
 
@@ -16,6 +16,10 @@ The repository contains the Spring Boot backend, Cloudflare D1 Worker, React web
 - Phase 5: Spring Boot REST API complete
 - Phase 6: JavaFX desktop application complete
 - Phase 7: Cloudflare D1 persistence complete; local Worker/D1 integration verified (remote deployment verification in Phase 11)
+- Phase 8: JavaFX desktop integration with persistent simulation — next
+- Phase 9: Real-time updates — pending evaluation
+- Phase 10: Testing and performance — pending
+- Phase 11: Backend deployment and desktop distribution — pending
 
 ## Requirements
 
@@ -29,7 +33,6 @@ The repository contains the Spring Boot backend, Cloudflare D1 Worker, React web
 .\mvnw.cmd test
 npm.cmd --prefix worker test
 npm.cmd --prefix worker run typecheck
-npm.cmd --prefix web run build
 ```
 
 ## Run the app
@@ -85,5 +88,5 @@ Set the actual Worker URL and a valid secret in the backend environment before s
 - `src/test/java` — automated tests
 - `docs/` — architecture and design notes
 - `desktop/` — JavaFX desktop client
-- `web/` — React + Vite web client
+- `web/` — existing React + Vite client, retained but outside the current development scope
 - `worker/` — Cloudflare D1 Worker and SQL migrations
