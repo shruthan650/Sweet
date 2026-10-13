@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.RestClientException;
 
 import com.shruthan.sweet.model.City;
 import com.shruthan.sweet.service.CityService;
@@ -67,5 +68,28 @@ class CityControllerApiTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value("city-1"))
                 .andExpect(jsonPath("$.name").value("Harbor"));
+    }
+
+    @Test
+    void invalidCityInputReturnsBadRequestWithAnErrorMessage() throws Exception {
+        when(cityService.create(any(City.class)))
+                .thenThrow(new IllegalArgumentException("City name is required"));
+
+        mockMvc.perform(post("/api/cities")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"id":"city-1","name":" ","width":12,"height":8}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("City name is required"));
+    }
+
+    @Test
+    void storageFailureReturnsGatewayErrorWithoutLeakingInternalDetails() throws Exception {
+        when(cityService.findAll()).thenThrow(new RestClientException("worker secret or host detail"));
+
+        mockMvc.perform(get("/api/cities"))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.error").value("Persistent storage service is unavailable"));
     }
 }
