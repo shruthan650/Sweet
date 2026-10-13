@@ -1,0 +1,18 @@
+# Phase 10 performance baseline
+
+Recorded with Java 25.0.2 on Windows 11 using:
+
+```powershell
+mvn -Dtest=SimulationEngineBenchmark test
+```
+
+The harness runs three samples per workload, with 200 warm-up ticks and 1,000 measured ticks per sample. It reports the median time per tick.
+
+| Workload | Median tick time |
+| --- | ---: |
+| 100 intersections, 50 vehicles | 0.004 ms |
+| 500 intersections, 250 vehicles | 0.002 ms |
+| 1,000 intersections, 500 vehicles | 0.004 ms |
+| 1,000 intersections, 20 vehicles, 2,000 route nodes each | 0.016 ms |
+
+These are local characterization results, not performance guarantees. The benchmark calls `SimulationEngine` directly; it excludes REST, D1, JavaFX rendering, startup, and concurrent clients. The route workload uses synthetic routes to exercise route advancement. The measurements do not currently show a need to optimize the engine tick path; repeat them on deployment hardware and with representative user cities before making performance claims.
