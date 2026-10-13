@@ -185,6 +185,20 @@ describe("Cloudflare D1 Worker API", () => {
     expect(saved.intersections[0].outgoingRoads).toHaveLength(1);
     expect(saved.vehicles[0].route).toHaveLength(1);
     expect(saved.buildings).toHaveLength(1);
+
+    const reloadResponse = await worker.fetch(request("/v1/cities/downtown-1"), env(db));
+    const reloaded = await reloadResponse.json() as ReturnType<typeof cityPayload>;
+
+    expect(reloadResponse.status).toBe(200);
+    expect(reloaded.name).toBe(cityPayload().name);
+    expect(reloaded.roads[0].start).toMatchObject({ id: "i1", x: 2, y: 2 });
+    expect(reloaded.roads[0].end).toMatchObject({ id: "i2", x: 8, y: 2 });
+    expect(reloaded.intersections[0].trafficLight?.state).toBe("RED");
+    expect(reloaded.intersections[0].outgoingRoads).toHaveLength(1);
+    expect(reloaded.vehicles[0].currentIntersection).toMatchObject({ id: "i1" });
+    expect(reloaded.vehicles[0].destination).toMatchObject({ id: "i2" });
+    expect(reloaded.vehicles[0].route).toHaveLength(1);
+    expect(reloaded.buildings[0]).toMatchObject({ id: "b1", name: "Library", type: "PUBLIC" });
     expect(calls.some((call) => call.sql.includes(cityPayload().name))).toBe(false);
     expect(calls.some((call) => call.sql.includes("VALUES (?, ?, ?, ?)") && call.values.includes(cityPayload().name))).toBe(true);
   });
