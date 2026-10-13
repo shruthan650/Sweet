@@ -16,7 +16,9 @@ The Blueprint marks secret values `sync: false`, so they are entered through Ren
 
 ## Cloudflare D1 and Worker
 
-`worker/wrangler.toml` currently contains a placeholder D1 database ID. Before deploying, replace it with the ID of the existing D1 database and verify that the target is correct. Keep the ID in the deployment configuration, not application secrets.
+`worker/wrangler.toml` points to the new `sweet-db` database. The initial remote schema migration (`0001_initial_schema.sql`) has been applied and verified; confirm the configured database target before applying any later migrations. Keep the database ID in deployment configuration, not application secrets.
+
+The `sweet-d1-api` Worker is deployed with `SWEET_API_SECRET` installed. Its public URL is `https://sweet-d1-api.sweet-d1-worker.workers.dev`; this URL is recorded in the ignored local `.env`. Authenticated HTTP checks and the backend-to-Worker path still need verification during Render setup.
 
 From `worker/`, inspect migration status and the target before applying anything remotely:
 
@@ -74,7 +76,7 @@ Set `SWEET_API_BASE_URL` to the deployed backend origin and `SWEET_API_ACCESS_TO
 - Deploy the Render Blueprint and configure the Worker URL, Worker secret, and API access token in Render.
 - Confirm `/actuator/health` and authenticated `GET /api/cities` succeed on the Render URL.
 - Build and smoke-test a JavaFX app image on each target operating system.
-- Push a version tag such as `v0.1.0` to run `.github/workflows/desktop-release.yml`. It tests the backend and Worker, tests the JavaFX client on each native runner, and publishes Windows x64, macOS ARM64, and Linux x64 app images as `.tar.gz` assets on a GitHub release.
+- Pull requests and branch pushes run backend/Worker tests and build the backend Docker image. Push a version tag such as `v0.1.0` to also test/package the JavaFX client on each native runner and publish Windows x64, macOS ARM64, and Linux x64 app images as `.tar.gz` assets on a GitHub release.
 - On each platform, unpack the matching asset and run the included `Sweet` app image on a machine without a JDK. Do not commit generated files or credentials.
 
 The release workflow needs no deployment secrets. Its final job uses the repository-provided `GITHUB_TOKEN` with `contents: write` only to create the tagged release and upload the three packages; build and validation jobs have read-only repository permissions.

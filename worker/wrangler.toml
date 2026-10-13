@@ -6,5 +6,5 @@ workers_dev = true
 [[d1_databases]]
 binding = "DB"
 database_name = "sweet-db"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "24022581-138f-41bf-bb54-21444182f867"
 migrations_dir = "migrations"
