@@ -1,0 +1,12 @@
+.git
+.github
+.idea
+.vscode
+.env
+.env.*
+!.env.example
+target
+desktop
+worker
+web
+docs

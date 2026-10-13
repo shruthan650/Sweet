@@ -31,13 +31,21 @@ public final class SweetApiClient {
 
     public SweetApiClient() {
         this(URI.create(System.getenv().getOrDefault("SWEET_API_BASE_URL", DEFAULT_BASE_URL)),
-                HttpClient.newBuilder().connectTimeout(REQUEST_TIMEOUT).build());
+                HttpClient.newBuilder().connectTimeout(REQUEST_TIMEOUT).build(),
+                System.getenv().getOrDefault("SWEET_API_ACCESS_TOKEN", ""));
     }
 
     SweetApiClient(URI baseUri, HttpClient httpClient) {
+        this(baseUri, httpClient, "");
+    }
+
+    SweetApiClient(URI baseUri, HttpClient httpClient, String accessToken) {
         this.baseUri = validateBaseUri(baseUri);
         this.httpClient = httpClient;
+        this.accessToken = accessToken == null ? "" : accessToken;
     }
+
+    private final String accessToken;
 
     public CompletableFuture<List<CitySummary>> listCities() {
         return send("GET", "/api/cities").thenApply(body -> {
@@ -174,6 +182,9 @@ public final class SweetApiClient {
         HttpRequest.Builder requestBuilder = HttpRequest.newBuilder(baseUri.resolve(path))
                 .timeout(REQUEST_TIMEOUT)
                 .header("Accept", "application/json");
+        if (!accessToken.isBlank()) {
+            requestBuilder.header("Authorization", "Bearer " + accessToken);
+        }
         if (jsonBody == null) {
             requestBuilder.method(method, HttpRequest.BodyPublishers.noBody());
         } else {

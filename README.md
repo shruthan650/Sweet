@@ -19,7 +19,7 @@ The active application is the Spring Boot backend, Cloudflare D1 Worker, and Jav
 - Phase 8: JavaFX desktop integration with persistent simulation complete; city edits are explicitly saved through the backend, and simulation vehicle/traffic-light state is saved after each tick, step, and reset
 - Phase 9: Real-time update evaluation complete; the single JavaFX client uses one-second REST ticks and refreshes city state, so WebSockets are deferred until server-driven updates or multiple concurrent clients are required
 - Phase 10: Testing and performance complete; backend suite has 44 passing tests, desktop suite has 11 passing tests (including JavaFX canvas selection and grid-click interactions), and Worker suite has 4 passing tests plus a passing typecheck; coverage includes BFS/Dijkstra, HTTP error contracts, Worker city reloads, local D1 process-restart persistence, SQL migration application, and a recorded local simulation benchmark
-- Phase 11: Backend deployment and desktop distribution — pending
+- Phase 11: Backend deployment and desktop distribution — in progress; Render Docker blueprint, production API bearer-token protection, environment-based Worker configuration, tested Actuator health endpoint, and native jpackage app-image workflow are prepared; the Windows app image builds successfully, while production D1/Worker and clean-machine desktop verification remain
 
 ## Requirements
 
@@ -81,6 +81,10 @@ npx wrangler d1 migrations apply sweet-db --remote
 ```
 
 Set the actual Worker URL and a valid secret in the backend environment before starting the API. Do not run the remote migration command until the database ID is configured and the target database is confirmed.
+
+## Deployment and desktop distribution
+
+See [Phase 11 deployment and distribution](docs/phase-11-deployment.md) for Render setup, Cloudflare production verification, API endpoints, desktop packaging, and clean-environment checks. The backend can be built with the root Dockerfile. Build a native JavaFX app image on the target operating system with `powershell.exe -NoProfile -ExecutionPolicy Bypass -File desktop/package.ps1`; set `SWEET_API_BASE_URL` and the separately issued `SWEET_API_ACCESS_TOKEN` before launching the packaged app.
 
 ## Project structure
 

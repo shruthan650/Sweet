@@ -49,6 +49,22 @@ class SweetApiClientTest {
     }
 
     @Test
+    void configuredAccessTokenIsSentAsABearerHeader() throws IOException {
+        AtomicReference<String> authorization = new AtomicReference<>();
+        server.createContext("/api/cities", exchange -> {
+            authorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
+            respond(exchange, 200, "[]");
+        });
+        SweetApiClient authenticatedClient = new SweetApiClient(URI.create(
+                "http://127.0.0.1:" + server.getAddress().getPort()), HttpClient.newHttpClient(),
+                "desktop-test-token-0123456789-abcdef");
+
+        authenticatedClient.listCities().join();
+
+        assertEquals("Bearer desktop-test-token-0123456789-abcdef", authorization.get());
+    }
+
+    @Test
     void getCityDetailsReturnsTheCityJsonForCanvasRendering() throws IOException {
         server.createContext("/api/cities/city-1", exchange -> respond(exchange, 200,
                 """
