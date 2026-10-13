@@ -52,6 +52,8 @@ Simulation ticks persist vehicle and traffic-light state; Start and Resume advan
 .\mvnw.cmd -f desktop\pom.xml javafx:run
 ```
 
+On first launch, the desktop creates a `Sweet Starter City` if the backend has no saved cities. It includes a connected road layout, central traffic light, sample buildings, and a vehicle to explore.
+
 ## Cloudflare D1 persistence
 
 The Spring Boot backend persists city configuration through the Cloudflare Worker; frontend clients must use the Spring Boot API and must not connect to D1 directly. The Worker stores cities, intersections (including traffic-light configuration), roads and their directional links, buildings, vehicles, and vehicle routes in normalized tables. Simulation ticks and event history are currently in-memory runtime state and are not retained in D1.
@@ -92,5 +94,4 @@ See [Phase 11 deployment and distribution](docs/phase-11-deployment.md) for Rend
 - `src/test/java` — automated tests
 - `docs/` — architecture and design notes
 - `desktop/` — JavaFX desktop client
-- `web/` — existing React + Vite client, retained but outside the current development scope
 - `worker/` — Cloudflare D1 Worker and SQL migrations

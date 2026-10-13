@@ -269,7 +269,45 @@ public class SweetDesktopApplication extends Application {
             }
         });
         stage.show();
-        loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton, cityListLoadSequence, null);
+        loadInitialCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton, cityListLoadSequence);
+    }
+
+    private static void loadInitialCities(SweetApiClient apiClient, ListView<CitySummary> cityList,
+            CityCanvas cityCanvas, Label statusLabel, Button refreshButton,
+            AtomicInteger cityListLoadSequence) {
+        int sequence = cityListLoadSequence.incrementAndGet();
+        refreshButton.setDisable(true);
+        statusLabel.setText("Checking for saved cities...");
+        apiClient.listCities().whenComplete((cities, failure) -> Platform.runLater(() -> {
+            if (cityListLoadSequence.get() != sequence) {
+                return;
+            }
+            refreshButton.setDisable(false);
+            if (failure != null) {
+                statusLabel.setText("Could not load cities: " + errorMessage(failure));
+                return;
+            }
+            if (!cities.isEmpty()) {
+                loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton,
+                        cityListLoadSequence, null);
+                return;
+            }
+
+            statusLabel.setText("Creating the Sweet Starter City...");
+            apiClient.createCity(SampleCity.json()).whenComplete((created, createFailure) ->
+                    Platform.runLater(() -> {
+                        if (cityListLoadSequence.get() != sequence) {
+                            return;
+                        }
+                        if (createFailure != null) {
+                            statusLabel.setText("Could not create the starter city: "
+                                    + errorMessage(createFailure));
+                            return;
+                        }
+                        loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton,
+                                cityListLoadSequence, created.id());
+                    }));
+        }));
     }
 
     private static void loadCities(SweetApiClient apiClient, ListView<CitySummary> cityList, CityCanvas cityCanvas,
