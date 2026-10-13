@@ -2,6 +2,7 @@ services:
   - type: web
     name: sweet-backend
     runtime: docker
+    plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /actuator/health
