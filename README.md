@@ -18,7 +18,7 @@ The active application is the Spring Boot backend, Cloudflare D1 Worker, and Jav
 - Phase 7: Cloudflare D1 persistence complete; local Worker/D1 integration verified (remote deployment verification in Phase 11)
 - Phase 8: JavaFX desktop integration with persistent simulation complete; city edits are explicitly saved through the backend, and simulation vehicle/traffic-light state is saved after each tick, step, and reset
 - Phase 9: Real-time update evaluation complete; the single JavaFX client uses one-second REST ticks and refreshes city state, so WebSockets are deferred until server-driven updates or multiple concurrent clients are required
-- Phase 10: Testing and performance — in progress; backend suite has 42 passing tests, desktop API suite has 9 passing tests, and Worker suite has 4 passing tests plus a passing typecheck; HTTP error contracts, Worker city reload coverage across requests, a local D1 save/restart/reload check, and the local simulation benchmark are recorded
+- Phase 10: Testing and performance — in progress; backend suite has 42 passing tests, desktop suite has 11 passing tests (including JavaFX canvas selection and grid-click interactions), and Worker suite has 4 passing tests plus a passing typecheck; HTTP error contracts, Worker city reload coverage across requests, a local D1 save/restart/reload check, and the local simulation benchmark are recorded
 - Phase 11: Backend deployment and desktop distribution — pending
 
 ## Requirements
