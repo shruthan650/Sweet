@@ -74,4 +74,7 @@ Set `SWEET_API_BASE_URL` to the deployed backend origin and `SWEET_API_ACCESS_TO
 - Deploy the Render Blueprint and configure the Worker URL, Worker secret, and API access token in Render.
 - Confirm `/actuator/health` and authenticated `GET /api/cities` succeed on the Render URL.
 - Build and smoke-test a JavaFX app image on each target operating system.
-- Attach platform-specific app images to a release; do not commit generated files or credentials.
+- Push a version tag such as `v0.1.0` to run `.github/workflows/desktop-release.yml`. It tests the backend and Worker, tests the JavaFX client on each native runner, and publishes Windows x64, macOS ARM64, and Linux x64 app images as `.tar.gz` assets on a GitHub release.
+- On each platform, unpack the matching asset and run the included `Sweet` app image on a machine without a JDK. Do not commit generated files or credentials.
+
+The release workflow needs no deployment secrets. Its final job uses the repository-provided `GITHUB_TOKEN` with `contents: write` only to create the tagged release and upload the three packages; build and validation jobs have read-only repository permissions.

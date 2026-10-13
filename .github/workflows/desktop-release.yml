@@ -1,0 +1,132 @@
+name: Desktop release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate backend and Worker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Test backend
+        run: mvn --batch-mode test
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+
+      - name: Test and typecheck Worker
+        run: |
+          npm --prefix worker ci
+          npm --prefix worker test
+          npm --prefix worker run typecheck
+
+  package:
+    name: Package ${{ matrix.os }}
+    needs: validate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: sweet-windows-x64
+          - os: macos-latest
+            artifact: sweet-macos-arm64
+          - os: ubuntu-latest
+            artifact: sweet-linux-x64
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: desktop/pom.xml
+
+      - name: Test and package desktop
+        run: mvn --batch-mode --file desktop/pom.xml verify
+
+      - name: Create native app image
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $pom = [xml](Get-Content desktop/pom.xml -Raw)
+          $version = $pom.project.version -replace '-SNAPSHOT$', ''
+          $jar = Get-ChildItem desktop/target -Filter 'sweet-desktop-*.jar' -File |
+            Where-Object { $_.Name -notlike '*.original' } |
+            Select-Object -First 1
+          if (-not $jar) { throw 'Desktop application JAR was not created.' }
+          Copy-Item $jar.FullName desktop/target/package-input/ -Force
+          $destination = 'desktop/target/dist'
+          New-Item -ItemType Directory -Force $destination | Out-Null
+          jpackage `
+            --type app-image `
+            --name Sweet `
+            --app-version $version `
+            --input desktop/target/package-input `
+            --main-jar $jar.Name `
+            --main-class com.shruthan.sweet.desktop.SweetDesktopApplication `
+            --java-options '--enable-native-access=ALL-UNNAMED' `
+            --dest $destination
+          if ($LASTEXITCODE -ne 0) { throw 'jpackage failed.' }
+
+      - name: Archive app image
+        shell: pwsh
+        env:
+          RELEASE_ASSET: ${{ matrix.artifact }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archive = "$env:RELEASE_ASSET.tar.gz"
+          $appImage = 'Sweet'
+          if (Test-Path desktop/target/dist/Sweet.app) { $appImage = 'Sweet.app' }
+          tar -czf $archive -C desktop/target/dist $appImage
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to archive app image.' }
+
+      - name: Upload app image
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+
+  release:
+    name: Publish GitHub release
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download platform packages
+        uses: actions/download-artifact@v8
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create release and upload assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: gh release create "$TAG_NAME" release-assets/* --generate-notes
