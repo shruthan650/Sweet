@@ -305,7 +305,7 @@ public class SweetDesktopApplication extends Application {
                             return;
                         }
                         loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton,
-                                cityListLoadSequence, created.id());
+                                cityListLoadSequence, SampleCity.ID);
                     }));
         }));
     }
