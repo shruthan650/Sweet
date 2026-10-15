@@ -30,28 +30,32 @@ public class SimulationService {
     }
 
     public SimulationStatusDto start(String cityId) {
-        City city = loadCity(cityId);
-        SimulationEngine engine = new SimulationEngine(city);
-        engine.start();
-        engines.put(cityId, engine);
-        return toStatus(cityId, engine);
+        SimulationEngine engine = getOrCreate(cityId);
+        synchronized (engine) {
+            engine.start();
+            return toStatus(cityId, engine);
+        }
     }
 
     public SimulationStatusDto tick(String cityId) {
         SimulationEngine engine = getOrCreate(cityId);
-        long previousTick = engine.getClock().getCurrentTick();
-        engine.tick();
-        if (engine.getClock().getCurrentTick() != previousTick) {
-            cityService.update(cityId, engine.getCity());
+        synchronized (engine) {
+            long previousTick = engine.getClock().getCurrentTick();
+            engine.tick();
+            if (engine.getClock().getCurrentTick() != previousTick) {
+                cityService.update(cityId, engine.getCity());
+            }
+            return toStatus(cityId, engine);
         }
-        return toStatus(cityId, engine);
     }
 
     public SimulationStatusDto step(String cityId) {
         SimulationEngine engine = getOrCreate(cityId);
-        engine.step();
-        cityService.update(cityId, engine.getCity());
-        return toStatus(cityId, engine);
+        synchronized (engine) {
+            engine.step();
+            cityService.update(cityId, engine.getCity());
+            return toStatus(cityId, engine);
+        }
     }
 
     public void updateCity(City city) {
@@ -60,7 +64,9 @@ public class SimulationService {
         }
         SimulationEngine engine = engines.get(city.getId());
         if (engine != null) {
-            engine.updateCity(city);
+            synchronized (engine) {
+                engine.updateCity(city);
+            }
         }
     }
 
@@ -73,21 +79,27 @@ public class SimulationService {
 
     public SimulationStatusDto pause(String cityId) {
         SimulationEngine engine = getOrCreate(cityId);
-        engine.pause();
-        return toStatus(cityId, engine);
+        synchronized (engine) {
+            engine.pause();
+            return toStatus(cityId, engine);
+        }
     }
 
     public SimulationStatusDto resume(String cityId) {
         SimulationEngine engine = getOrCreate(cityId);
-        engine.resume();
-        return toStatus(cityId, engine);
+        synchronized (engine) {
+            engine.resume();
+            return toStatus(cityId, engine);
+        }
     }
 
     public SimulationStatusDto reset(String cityId) {
         SimulationEngine engine = getOrCreate(cityId);
-        engine.reset();
-        cityService.update(cityId, engine.getCity());
-        return toStatus(cityId, engine);
+        synchronized (engine) {
+            engine.reset();
+            cityService.update(cityId, engine.getCity());
+            return toStatus(cityId, engine);
+        }
     }
 
     public VehicleRouteDto assignDestination(String cityId, String vehicleId, String destinationIntersectionId) {

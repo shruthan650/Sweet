@@ -13,9 +13,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 /** A busy starter map for demonstrating routes, vehicles, and traffic lights. */
 final class SampleCity {
 
-    static final String ID = "sweet-traffic-demo-v2";
+    static final String ID = "sweet-traffic-demo-v3";
     static final String NAME = "Sweet Traffic Demo";
     static final String LEGACY_ID = "sweet-demo-v1";
+    static final String PREVIOUS_DEMO_ID = "sweet-traffic-demo-v2";
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final int[] X_COORDINATES = { 2, 8, 14, 20 };
     private static final int[] Y_COORDINATES = { 2, 7, 12, 16 };
@@ -188,7 +189,15 @@ final class SampleCity {
                 vehicle("car-09", "Southbound Bus", 2, 3, 34, 2, 2, 2, 1, 1, 1),
                 vehicle("car-10", "Old Town Taxi", 1, 0, 29, 1, 1, 2, 1, 3, 1),
                 vehicle("car-11", "Park Service", 0, 3, 22, 0, 2, 0, 1, 0, 0),
-                vehicle("car-12", "Eastbound Delivery", 3, 0, 40, 2, 0, 2, 1, 1, 1));
+                vehicle("car-12", "Eastbound Delivery", 3, 0, 40, 2, 0, 2, 1, 1, 1),
+                vehicle("car-13", "Morning Commuter", 1, 0, 31, 1, 1, 1, 2, 1, 3),
+                vehicle("car-14", "Market Delivery", 2, 0, 26, 2, 1, 1, 1, 0, 1),
+                vehicle("car-15", "School Bus", 0, 1, 24, 1, 1, 2, 1, 3, 1),
+                vehicle("car-16", "Civic Taxi", 3, 1, 36, 2, 1, 2, 2, 1, 3),
+                vehicle("car-17", "South Courier", 0, 2, 29, 0, 3, 1, 3, 2, 3),
+                vehicle("car-18", "Airport Shuttle", 1, 2, 42, 2, 2, 3, 2, 3, 1),
+                vehicle("car-19", "Evening Rideshare", 2, 2, 33, 2, 1, 1, 1, 0, 1),
+                vehicle("car-20", "Harbor Bus", 3, 2, 27, 3, 1, 2, 1, 1, 0));
     }
 
     private static VehicleSpec vehicle(String id, String name, int startColumn, int startRow, int speedKph,

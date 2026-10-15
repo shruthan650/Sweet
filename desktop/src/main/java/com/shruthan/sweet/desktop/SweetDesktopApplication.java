@@ -94,6 +94,11 @@ public class SweetDesktopApplication extends Application {
             if (activeCityId == null || !simulationBusy.compareAndSet(false, true)) {
                 return;
             }
+            CitySummary tickingSelection = cityList.getSelectionModel().getSelectedItem();
+            if (tickingSelection != null && activeCityId.equals(tickingSelection.id())) {
+                updateSimulationButtons(true, false, true,
+                        startButton, pauseButton, resumeButton, tickButton, resetButton);
+            }
             apiClient.tickSimulation(activeCityId).whenComplete((result, failure) -> Platform.runLater(() -> {
                 simulationBusy.set(false);
                 if (!activeCityId.equals(activeSimulationCityId.get())) {
@@ -104,6 +109,8 @@ public class SweetDesktopApplication extends Application {
                     CitySummary currentSelection = cityList.getSelectionModel().getSelectedItem();
                     if (currentSelection != null && activeCityId.equals(currentSelection.id())) {
                         simulationLabel.setText("Automatic tick failed: " + errorMessage(failure));
+                        updateSimulationButtons(false, false, false,
+                                startButton, pauseButton, resumeButton, tickButton, resetButton);
                         apiClient.pauseSimulation(activeCityId).whenComplete((paused, pauseFailure) -> {
                             if (pauseFailure != null) {
                                 Platform.runLater(() -> simulationLabel.setText(
@@ -295,7 +302,8 @@ public class SweetDesktopApplication extends Application {
             }
 
             boolean hasOlderStarter = cities.stream()
-                    .anyMatch(city -> SampleCity.LEGACY_ID.equals(city.id()));
+                    .anyMatch(city -> SampleCity.LEGACY_ID.equals(city.id())
+                            || SampleCity.PREVIOUS_DEMO_ID.equals(city.id()));
             if (!cities.isEmpty() && !hasOlderStarter) {
                 loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton,
                         cityListLoadSequence, null);
