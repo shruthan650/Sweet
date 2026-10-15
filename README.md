@@ -109,19 +109,27 @@ Set the actual Worker URL and a valid secret in the backend environment before s
 
 See [Phase 11 deployment and distribution](docs/phase-11-deployment.md) for Render setup, Cloudflare production verification, API endpoints, desktop packaging, and clean-environment checks. The backend can be built with the root Dockerfile. Build a native JavaFX app image on the target operating system with `powershell.exe -NoProfile -ExecutionPolicy Bypass -File desktop/package.ps1`; it bundles a Java runtime and is the recommended download for users.
 
-For Windows users who prefer a JAR, build a JAR bundle with Java 25 and PowerShell:
+### Download and run the Windows JAR bundle
+
+1. Open the project's [latest GitHub release](https://github.com/shruthan650/Sweet/releases/latest).
+2. Under **Assets**, download `sweet-desktop-windows-x64-jar.zip`. This ZIP includes the app JAR, its required libraries, and a launcher; do not download the source-code ZIP files.
+3. Extract the ZIP to a folder on your Windows x64 computer. Install Java 25 if it is not already installed.
+4. Copy `env.example` to `.env` in the extracted folder. Set `SWEET_API_ACCESS_TOKEN` in `.env` to an access token issued for the hosted API. The app connects to the hosted API over the internet; the release does not include a token.
+5. In that folder, run:
+
+   ```powershell
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\run.ps1
+   ```
+
+When the desktop opens, it loads the sample city if the hosted service has no saved cities. Press **Start** to watch traffic move. The `.env` file contains your private credential: never commit it or share it. If you do not have an API access token, contact the project maintainer; do not expect the public release to contain one.
+
+To build the same JAR bundle yourself, use Java 25 and PowerShell from a local checkout:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File desktop/package-jar.ps1
 ```
 
-This creates `desktop/target/dist/sweet-desktop-windows-x64-jar.zip`, containing the application JAR, JavaFX and Jackson dependencies, an `env.example` template, and a `run.ps1` launcher. Extract the ZIP, copy `env.example` to `.env` in the extracted folder, and set `SWEET_API_ACCESS_TOKEN` in that `.env` to a token issued for the hosted service. Then run:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\run.ps1
-```
-
-The JAR bundle requires Java 25 installed on the user's computer and is specific to Windows x64. Do not include `.env` in a release or share it; the launcher reads credentials locally and does not print them. The hosted API requires an access token, which is not included in the JAR. Version-tagged GitHub releases attach this Windows JAR bundle alongside Windows and Linux native app images. Branch pushes and pull requests run backend/Worker checks and build the backend image.
+This creates `desktop/target/dist/sweet-desktop-windows-x64-jar.zip`. The JAR bundle is for Windows x64 and requires Java 25 on the user's computer. Version-tagged releases also include Windows and Linux native app images, which bundle their Java runtime. Branch pushes and pull requests run backend/Worker checks and build the backend image.
 
 ## Project structure
 
