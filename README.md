@@ -23,9 +23,12 @@ The active application is the Spring Boot backend, Cloudflare D1 Worker, and Jav
 
 ## Requirements
 
+For the Spring Boot backend and JavaFX desktop app:
+
 - Java 25
 - Maven wrapper (`./mvnw`)
-- Node.js 22 or newer for the Cloudflare Worker
+
+Node.js 22 or newer is only required when developing, testing, or deploying the Cloudflare Worker (`worker/`). It is not needed to run the Java desktop app with the hosted backend.
 
 ## Run tests
 
