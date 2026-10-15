@@ -10,6 +10,12 @@ $target = Join-Path $desktopRoot "target"
 $inputDirectory = Join-Path $target "package-input"
 $destination = Join-Path $target "dist"
 
+if ([Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
+    [Runtime.InteropServices.OSPlatform]::OSX
+)) {
+    throw "macOS packaging is not supported. Build the Windows or Linux app image on its matching OS."
+}
+
 if (-not (Get-Command jpackage -ErrorAction SilentlyContinue)) {
     throw "jpackage was not found. Install a JDK 25 and add its bin directory to PATH."
 }
@@ -52,15 +58,9 @@ $jpackageArguments = @(
     "--main-jar", $applicationJar.Name,
     "--main-class", "com.shruthan.sweet.desktop.SweetDesktopApplication",
     "--java-options", "--enable-native-access=ALL-UNNAMED",
+    "--app-version", $applicationVersion,
     "--dest", $destination
 )
-# macOS rejects 0.x app versions. Since --app-version is optional, keep
-# jpackage's valid default on macOS and use the Maven version elsewhere.
-if (-not [Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
-    [Runtime.InteropServices.OSPlatform]::OSX
-)) {
-    $jpackageArguments += @("--app-version", $applicationVersion)
-}
 
 & jpackage @jpackageArguments
 if ($LASTEXITCODE -ne 0) {

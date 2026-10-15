@@ -56,8 +56,6 @@ jobs:
         include:
           - os: windows-latest
             artifact: sweet-windows-x64
-          - os: macos-latest
-            artifact: sweet-macos-arm64
           - os: ubuntu-latest
             artifact: sweet-linux-x64
     steps:
@@ -97,11 +95,7 @@ jobs:
             '--java-options', '--enable-native-access=ALL-UNNAMED',
             '--dest', $destination
           )
-          # macOS requires a positive first version component; omit this optional
-          # metadata flag there and let jpackage use its valid default.
-          if ($env:RUNNER_OS -ne 'macOS') {
-            $jpackageArgs += @('--app-version', $version)
-          }
+          $jpackageArgs += @('--app-version', $version)
           & jpackage @jpackageArgs
           if ($LASTEXITCODE -ne 0) { throw 'jpackage failed.' }
 
@@ -147,6 +141,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
       - name: Download platform packages
         uses: actions/download-artifact@v8
         with:

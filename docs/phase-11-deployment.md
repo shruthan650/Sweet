@@ -65,7 +65,7 @@ Build a native app image on each target OS with JDK 25, Maven, and `jpackage` av
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File desktop/package.ps1
 ```
 
-The script runs the desktop Maven package, stages runtime dependencies, and creates `desktop/target/dist/Sweet` for the host OS. App images are platform-specific; build on Windows for Windows, macOS for macOS, and Linux for Linux. The generated app image is an ignored build artifact and must not be committed.
+The script runs the desktop Maven package, stages runtime dependencies, and creates `desktop/target/dist/Sweet` for the host OS. App images are platform-specific; build on Windows for Windows and Linux for Linux. The generated app image is an ignored build artifact and must not be committed.
 
 To make a Windows JAR bundle for a computer with Java 25 already installed, run:
 
@@ -73,7 +73,7 @@ To make a Windows JAR bundle for a computer with Java 25 already installed, run:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File desktop/package-jar.ps1
 ```
 
-This produces `desktop/target/dist/sweet-desktop-windows-x64-jar.zip`. The bundle contains the JAR, its Windows JavaFX/Jackson runtime dependencies, an `env.example` template, and a launcher. Extract it, copy `env.example` to `.env`, add the issued API access token, and launch with `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\run.ps1`. The JAR bundle is Windows x64 only; native app images are published for Windows, macOS, and Linux and are preferred for users without Java installed.
+This produces `desktop/target/dist/sweet-desktop-windows-x64-jar.zip`. The bundle contains the JAR, its Windows JavaFX/Jackson runtime dependencies, an `env.example` template, and a launcher. Extract it, copy `env.example` to `.env`, add the issued API access token, and launch with `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\run.ps1`. The JAR bundle is Windows x64 only; native app images are published for Windows and Linux and are preferred for users without Java installed.
 
 Set `SWEET_API_BASE_URL` to the deployed backend origin and `SWEET_API_ACCESS_TOKEN` to the client token before launching the app. The URL defaults to `http://localhost:8080`; local development does not require a token. Do not bake the token into the package. For a clean-machine acceptance check, install/copy the app image on a machine with no JDK, set the backend URL and token, launch Sweet, load the city list, create and edit a test city, and run/step/reset a simulation. Confirm the Render health endpoint and city API remain available during the check.
 
@@ -84,7 +84,7 @@ Set `SWEET_API_BASE_URL` to the deployed backend origin and `SWEET_API_ACCESS_TO
 - Deploy the Render Blueprint and configure the Worker URL, Worker secret, and API access token in Render.
 - Confirm `/actuator/health` and authenticated `GET /api/cities` succeed on the Render URL.
 - Build and smoke-test a JavaFX app image on each target operating system.
-- Pull requests and branch pushes run backend/Worker tests and build the backend Docker image. Push a version tag such as `v0.1.0` to also test/package the JavaFX client on each native runner and publish Windows x64, macOS ARM64, and Linux x64 app images as `.tar.gz` assets plus the Windows x64 JAR bundle on a GitHub release.
+- Pull requests and branch pushes run backend/Worker tests and build the backend Docker image. Push a version tag such as `v0.1.0` to also test/package the JavaFX client on Windows and Linux runners and publish Windows x64 and Linux x64 app images as `.tar.gz` assets plus the Windows x64 JAR bundle on a GitHub release.
 - On each platform, unpack the matching asset and run the included `Sweet` app image on a machine without a JDK. Do not commit generated files or credentials.
 
 The release workflow needs no deployment secrets. Its final job uses the repository-provided `GITHUB_TOKEN` with `contents: write` only to create the tagged release and upload the native packages and Windows JAR bundle; build and validation jobs have read-only repository permissions.

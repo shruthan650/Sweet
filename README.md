@@ -121,7 +121,7 @@ This creates `desktop/target/dist/sweet-desktop-windows-x64-jar.zip`, containing
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\run.ps1
 ```
 
-The JAR bundle requires Java 25 installed on the user's computer and is specific to Windows x64. Do not include `.env` in a release or share it; the launcher reads credentials locally and does not print them. The hosted API requires an access token, which is not included in the JAR. Version-tagged GitHub releases attach this Windows JAR bundle alongside the Windows, macOS, and Linux native app images. Branch pushes and pull requests run backend/Worker checks and build the backend image.
+The JAR bundle requires Java 25 installed on the user's computer and is specific to Windows x64. Do not include `.env` in a release or share it; the launcher reads credentials locally and does not print them. The hosted API requires an access token, which is not included in the JAR. Version-tagged GitHub releases attach this Windows JAR bundle alongside Windows and Linux native app images. Branch pushes and pull requests run backend/Worker checks and build the backend image.
 
 ## Project structure
 
