@@ -107,7 +107,21 @@ Set the actual Worker URL and a valid secret in the backend environment before s
 
 ## Deployment and desktop distribution
 
-See [Phase 11 deployment and distribution](docs/phase-11-deployment.md) for Render setup, Cloudflare production verification, API endpoints, desktop packaging, and clean-environment checks. The backend can be built with the root Dockerfile. Build a native JavaFX app image on the target operating system with `powershell.exe -NoProfile -ExecutionPolicy Bypass -File desktop/package.ps1`; set `SWEET_API_BASE_URL` and the separately issued `SWEET_API_ACCESS_TOKEN` before launching the packaged app. Pull requests and branch pushes run backend/Worker checks and build the backend image; pushing a `v*` version tag also builds all three native desktop images and attaches them to a GitHub release.
+See [Phase 11 deployment and distribution](docs/phase-11-deployment.md) for Render setup, Cloudflare production verification, API endpoints, desktop packaging, and clean-environment checks. The backend can be built with the root Dockerfile. Build a native JavaFX app image on the target operating system with `powershell.exe -NoProfile -ExecutionPolicy Bypass -File desktop/package.ps1`; it bundles a Java runtime and is the recommended download for users.
+
+For Windows users who prefer a JAR, build a JAR bundle with Java 25 and PowerShell:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File desktop/package-jar.ps1
+```
+
+This creates `desktop/target/dist/sweet-desktop-windows-x64-jar.zip`, containing the application JAR, JavaFX and Jackson dependencies, an `env.example` template, and a `run.ps1` launcher. Extract the ZIP, copy `env.example` to `.env` in the extracted folder, and set `SWEET_API_ACCESS_TOKEN` in that `.env` to a token issued for the hosted service. Then run:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\run.ps1
+```
+
+The JAR bundle requires Java 25 installed on the user's computer and is specific to Windows x64. Do not include `.env` in a release or share it; the launcher reads credentials locally and does not print them. The hosted API requires an access token, which is not included in the JAR. Version-tagged GitHub releases attach this Windows JAR bundle alongside the Windows, macOS, and Linux native app images. Branch pushes and pull requests run backend/Worker checks and build the backend image.
 
 ## Project structure
 
