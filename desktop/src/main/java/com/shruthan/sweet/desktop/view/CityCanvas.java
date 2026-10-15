@@ -23,6 +23,7 @@ public final class CityCanvas extends Canvas {
 
     private JsonNode city;
     private final Map<String, VehicleMotion> vehicleMotions = new HashMap<>();
+    private boolean vehicleAnimationActive;
     private final AnimationTimer vehicleAnimator = new AnimationTimer() {
         @Override
         public void handle(long now) {
@@ -35,6 +36,7 @@ public final class CityCanvas extends Canvas {
             draw();
             if (vehicleMotions.isEmpty()) {
                 stop();
+                vehicleAnimationActive = false;
             }
         }
     };
@@ -118,10 +120,14 @@ public final class CityCanvas extends Canvas {
             for (JsonNode vehicle : city.path("vehicles")) {
                 double x = vehicle.path("x").asDouble();
                 double y = vehicle.path("y").asDouble();
-                nextMotions.put(vehicle.path("id").asText(), new VehicleMotion(x, y, x, y, now));
+                nextMotions.put(vehicle.path("id").asText(), new VehicleMotion(
+                        x, y, x, y, now - VehicleMotion.DURATION_NANOS));
             }
         }
-        vehicleAnimator.stop();
+        if (vehicleAnimationActive) {
+            vehicleAnimator.stop();
+            vehicleAnimationActive = false;
+        }
         vehicleMotions.clear();
         vehicleMotions.putAll(nextMotions);
         this.city = city;
@@ -134,6 +140,7 @@ public final class CityCanvas extends Canvas {
         }
         draw();
         if (vehicleMotions.values().stream().anyMatch(motion -> motion.progress(now) < 1)) {
+            vehicleAnimationActive = true;
             vehicleAnimator.start();
         }
     }
