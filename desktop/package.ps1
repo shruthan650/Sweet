@@ -45,15 +45,24 @@ if (Test-Path -LiteralPath $applicationImage) {
     Remove-Item -LiteralPath $applicationImage -Recurse -Force
 }
 
-& jpackage `
-    --type app-image `
-    --name Sweet `
-    --app-version $applicationVersion `
-    --input $inputDirectory `
-    --main-jar $applicationJar.Name `
-    --main-class com.shruthan.sweet.desktop.SweetDesktopApplication `
-    --java-options "--enable-native-access=ALL-UNNAMED" `
-    --dest $destination
+$jpackageArguments = @(
+    "--type", "app-image",
+    "--name", "Sweet",
+    "--input", $inputDirectory,
+    "--main-jar", $applicationJar.Name,
+    "--main-class", "com.shruthan.sweet.desktop.SweetDesktopApplication",
+    "--java-options", "--enable-native-access=ALL-UNNAMED",
+    "--dest", $destination
+)
+# macOS rejects 0.x app versions. Since --app-version is optional, keep
+# jpackage's valid default on macOS and use the Maven version elsewhere.
+if (-not [Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
+    [Runtime.InteropServices.OSPlatform]::OSX
+)) {
+    $jpackageArguments += @("--app-version", $applicationVersion)
+}
+
+& jpackage @jpackageArguments
 if ($LASTEXITCODE -ne 0) {
     throw "jpackage failed to create the desktop application image."
 }
