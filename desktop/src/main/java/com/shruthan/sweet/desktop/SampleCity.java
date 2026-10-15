@@ -13,10 +13,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 /** A busy starter map for demonstrating routes, vehicles, and traffic lights. */
 final class SampleCity {
 
-    static final String ID = "sweet-traffic-demo-v3";
+    static final String ID = "sweet-traffic-demo-v4";
     static final String NAME = "Sweet Traffic Demo";
     static final String LEGACY_ID = "sweet-demo-v1";
-    static final String PREVIOUS_DEMO_ID = "sweet-traffic-demo-v2";
+    static final String PREVIOUS_DEMO_ID = "sweet-traffic-demo-v3";
+    static final String OLDER_DEMO_ID = "sweet-traffic-demo-v2";
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final int[] X_COORDINATES = { 2, 8, 14, 20 };
     private static final int[] Y_COORDINATES = { 2, 7, 12, 16 };
@@ -202,9 +203,18 @@ final class SampleCity {
 
     private static VehicleSpec vehicle(String id, String name, int startColumn, int startRow, int speedKph,
             int... routeCoordinates) {
-        List<Position> route = new ArrayList<>();
+        List<Position> outboundRoute = new ArrayList<>();
         for (int index = 0; index < routeCoordinates.length; index += 2) {
-            route.add(new Position(routeCoordinates[index], routeCoordinates[index + 1]));
+            outboundRoute.add(new Position(routeCoordinates[index], routeCoordinates[index + 1]));
+        }
+        List<Position> route = new ArrayList<>();
+        Position start = new Position(startColumn, startRow);
+        for (int lap = 0; lap < 3; lap++) {
+            route.addAll(outboundRoute);
+            for (int index = outboundRoute.size() - 2; index >= 0; index--) {
+                route.add(outboundRoute.get(index));
+            }
+            route.add(start);
         }
         return new VehicleSpec(id, name, startColumn, startRow, speedKph, route);
     }

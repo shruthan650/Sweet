@@ -1,6 +1,7 @@
 package com.shruthan.sweet.desktop.view;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseButton;
@@ -10,6 +11,9 @@ import javafx.scene.paint.Color;
 
 import java.util.function.Consumer;
 import java.util.function.BiConsumer;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public final class CityCanvas extends Canvas {
 
@@ -18,6 +22,22 @@ public final class CityCanvas extends Canvas {
     private static final double MAX_ZOOM = 3;
 
     private JsonNode city;
+    private final Map<String, VehicleMotion> vehicleMotions = new HashMap<>();
+    private final AnimationTimer vehicleAnimator = new AnimationTimer() {
+        @Override
+        public void handle(long now) {
+            Iterator<Map.Entry<String, VehicleMotion>> iterator = vehicleMotions.entrySet().iterator();
+            while (iterator.hasNext()) {
+                if (iterator.next().getValue().progress(now) >= 1) {
+                    iterator.remove();
+                }
+            }
+            draw();
+            if (vehicleMotions.isEmpty()) {
+                stop();
+            }
+        }
+    };
     private double zoom = 1;
     private double panX;
     private double panY;
@@ -70,13 +90,52 @@ public final class CityCanvas extends Canvas {
     }
 
     public void setCity(JsonNode city) {
+        String previousCityId = this.city == null ? null : this.city.path("id").asText(null);
+        String nextCityId = city == null ? null : city.path("id").asText(null);
+        boolean sameCity = previousCityId != null && previousCityId.equals(nextCityId);
+        long now = System.nanoTime();
+        Map<String, VehicleMotion> nextMotions = new HashMap<>();
+        if (sameCity) {
+            for (JsonNode vehicle : city.path("vehicles")) {
+                String id = vehicle.path("id").asText();
+                if (id.isBlank()) {
+                    continue;
+                }
+                double targetX = vehicle.path("x").asDouble();
+                double targetY = vehicle.path("y").asDouble();
+                VehicleMotion previous = vehicleMotions.get(id);
+                if (previous == null) {
+                    previous = new VehicleMotion(targetX, targetY, targetX, targetY,
+                            now - VehicleMotion.DURATION_NANOS);
+                }
+                double[] current = previous.position(now);
+                boolean moved = Math.abs(current[0] - targetX) > 0.001
+                        || Math.abs(current[1] - targetY) > 0.001;
+                nextMotions.put(id, new VehicleMotion(current[0], current[1], targetX, targetY,
+                        moved ? now : now - VehicleMotion.DURATION_NANOS));
+            }
+        } else if (city != null) {
+            for (JsonNode vehicle : city.path("vehicles")) {
+                double x = vehicle.path("x").asDouble();
+                double y = vehicle.path("y").asDouble();
+                nextMotions.put(vehicle.path("id").asText(), new VehicleMotion(x, y, x, y, now));
+            }
+        }
+        vehicleAnimator.stop();
+        vehicleMotions.clear();
+        vehicleMotions.putAll(nextMotions);
         this.city = city;
-        zoom = 1;
-        panX = 0;
-        panY = 0;
-        selectedKind = null;
-        selectedId = null;
+        if (!sameCity) {
+            zoom = 1;
+            panX = 0;
+            panY = 0;
+            selectedKind = null;
+            selectedId = null;
+        }
         draw();
+        if (vehicleMotions.values().stream().anyMatch(motion -> motion.progress(now) < 1)) {
+            vehicleAnimator.start();
+        }
     }
 
     private void startPan(MouseEvent event) {
@@ -194,8 +253,9 @@ public final class CityCanvas extends Canvas {
 
     private EntitySelection findEntity(double x, double y) {
         for (JsonNode vehicle : city.path("vehicles")) {
-            if (distance(x, y, (vehicle.path("x").asDouble() + 0.5) * CELL_SIZE,
-                    (vehicle.path("y").asDouble() + 0.5) * CELL_SIZE) <= CELL_SIZE * 0.4) {
+            double[] position = vehiclePosition(vehicle, System.nanoTime());
+            if (distance(x, y, (position[0] + 0.5) * CELL_SIZE,
+                    (position[1] + 0.5) * CELL_SIZE) <= CELL_SIZE * 0.4) {
                 return new EntitySelection("Vehicle", vehicle);
             }
         }
@@ -320,9 +380,11 @@ public final class CityCanvas extends Canvas {
     }
 
     private void drawVehicles(GraphicsContext graphics, JsonNode city) {
+        long now = System.nanoTime();
         for (JsonNode vehicle : city.path("vehicles")) {
-            double x = (vehicle.path("x").asDouble() + 0.5) * CELL_SIZE;
-            double y = (vehicle.path("y").asDouble() + 0.5) * CELL_SIZE;
+            double[] position = vehiclePosition(vehicle, now);
+            double x = (position[0] + 0.5) * CELL_SIZE;
+            double y = (position[1] + 0.5) * CELL_SIZE;
             graphics.setFill(Color.web("#72b7ff"));
             graphics.fillRoundRect(x - 8, y - 5, 16, 10, 5, 5);
             graphics.setStroke(Color.web("#e4f2ff"));
@@ -333,6 +395,29 @@ public final class CityCanvas extends Canvas {
                 graphics.setLineWidth(2);
                 graphics.strokeOval(x - 12, y - 12, 24, 24);
             }
+        }
+    }
+
+    private double[] vehiclePosition(JsonNode vehicle, long now) {
+        VehicleMotion motion = vehicleMotions.get(vehicle.path("id").asText());
+        return motion == null
+                ? new double[] { vehicle.path("x").asDouble(), vehicle.path("y").asDouble() }
+                : motion.position(now);
+    }
+
+    private record VehicleMotion(double startX, double startY, double targetX, double targetY, long startNanos) {
+        private static final long DURATION_NANOS = 850_000_000L;
+
+        private double progress(long now) {
+            return Math.min(1, Math.max(0, (double) (now - startNanos) / DURATION_NANOS));
+        }
+
+        private double[] position(long now) {
+            double progress = progress(now);
+            return new double[] {
+                    startX + (targetX - startX) * progress,
+                    startY + (targetY - startY) * progress
+            };
         }
     }
 
