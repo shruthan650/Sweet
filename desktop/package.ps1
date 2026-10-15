@@ -58,6 +58,8 @@ $jpackageArguments = @(
     "--main-jar", $applicationJar.Name,
     "--main-class", "com.shruthan.sweet.desktop.SweetDesktopApplication",
     "--java-options", "--enable-native-access=ALL-UNNAMED",
+    "--java-options", "--module-path=`$APPDIR",
+    "--java-options", "--add-modules=javafx.controls",
     "--app-version", $applicationVersion,
     "--dest", $destination
 )

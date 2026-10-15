@@ -19,7 +19,7 @@ The active application is the Spring Boot backend, Cloudflare D1 Worker, and Jav
 - Phase 8: JavaFX desktop integration with persistent simulation complete; city edits are explicitly saved through the backend, and simulation vehicle/traffic-light state is saved after each tick, step, and reset
 - Phase 9: Real-time update evaluation complete; the single JavaFX client uses one-second REST ticks and refreshes city state, so WebSockets are deferred until server-driven updates or multiple concurrent clients are required
 - Phase 10: Testing and performance complete; backend suite has 50 passing tests, desktop suite has 12 passing tests (including JavaFX canvas selection and grid-click interactions), and Worker suite has 4 passing tests plus a passing typecheck; coverage includes BFS/Dijkstra, HTTP error contracts, Worker city reloads, local D1 process-restart persistence, SQL migration application, and a recorded local simulation benchmark
-- Phase 11: Backend deployment and desktop distribution — in progress; Render and the Cloudflare Worker are deployed, authenticated API access is verified (health `UP`, four cities returned), and Windows/Linux desktop packages were published in release `v0.1.4`; clean-machine desktop launch checks remain
+- Phase 11: Backend deployment and desktop distribution — in progress; Render and the Cloudflare Worker are deployed, authenticated API access is verified (health `UP`, four cities returned), and Windows/Linux packages are published; the `v0.1.4` Windows app image had a JavaFX startup configuration issue, now fixed in packaging scripts and awaiting a new release plus clean-machine verification
 
 ## Requirements
 
@@ -108,6 +108,8 @@ Set the actual Worker URL and a valid secret in the backend environment before s
 ## Deployment and desktop distribution
 
 See [Phase 11 deployment and distribution](docs/phase-11-deployment.md) for Render setup, Cloudflare production verification, API endpoints, desktop packaging, and clean-environment checks. The backend can be built with the root Dockerfile. Build a native JavaFX app image on the target operating system with `powershell.exe -NoProfile -ExecutionPolicy Bypass -File desktop/package.ps1`; it bundles a Java runtime and is the recommended download for users.
+
+For end-user download and launch instructions, see [Install and run Sweet](installAndRun.md).
 
 ### Download and run the Windows JAR bundle
 

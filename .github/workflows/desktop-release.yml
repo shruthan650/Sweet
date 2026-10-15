@@ -93,6 +93,8 @@ jobs:
             '--main-jar', $jar.Name,
             '--main-class', 'com.shruthan.sweet.desktop.SweetDesktopApplication',
             '--java-options', '--enable-native-access=ALL-UNNAMED',
+            '--java-options', '--module-path=$APPDIR',
+            '--java-options', '--add-modules=javafx.controls',
             '--dest', $destination
           )
           $jpackageArgs += @('--app-version', $version)

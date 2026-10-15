@@ -82,9 +82,9 @@ Set `SWEET_API_BASE_URL` to the deployed backend origin and `SWEET_API_ACCESS_TO
 - Configure and verify the existing D1 database ID before any remote migration.
 - Worker deployment and authenticated backend-to-Worker access are verified.
 - Render deployment, `/actuator/health`, and authenticated `GET /api/cities` are verified.
-- The `v0.1.4` release workflow completed successfully and published the Windows JAR bundle and platform app images.
-- Build and smoke-test a JavaFX app image on a clean machine without a JDK; confirm city loading and simulation controls work.
+- The `v0.1.4` release workflow completed and published the Windows JAR bundle and platform app images, but its Windows app image exited at startup because JavaFX modules were not configured on the module path. The workflow and local packaging script now include the JavaFX module path and controls module; publish a new release and verify it on a clean machine.
+- Smoke-test the fixed Windows JavaFX app image on a machine without a JDK; confirm city loading and simulation controls work.
 - Pull requests and branch pushes run backend/Worker tests and build the backend Docker image. Push a version tag such as `v0.1.0` to also test/package the JavaFX client on Windows and Linux runners and publish Windows x64 and Linux x64 app images as `.tar.gz` assets plus the Windows x64 JAR bundle on a GitHub release.
-- On each platform, unpack the matching asset and run the included `Sweet` app image on a machine without a JDK. Do not commit generated files or credentials.
+- On Linux, unpack the matching app image and run it on a machine without a JDK. Do not commit generated files or credentials.
 
 The release workflow needs no deployment secrets. Its final job uses the repository-provided `GITHUB_TOKEN` with `contents: write` only to create the tagged release and upload the native packages and Windows JAR bundle; build and validation jobs have read-only repository permissions.
