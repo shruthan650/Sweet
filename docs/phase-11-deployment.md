@@ -18,7 +18,7 @@ The Blueprint marks secret values `sync: false`, so they are entered through Ren
 
 `worker/wrangler.toml` points to the new `sweet-db` database. The initial remote schema migration (`0001_initial_schema.sql`) has been applied and verified; confirm the configured database target before applying any later migrations. Keep the database ID in deployment configuration, not application secrets.
 
-The `sweet-d1-api` Worker is deployed with `SWEET_API_SECRET` installed. Its public URL is `https://sweet-d1-api.sweet-d1-worker.workers.dev`; this URL is recorded in the ignored local `.env`. Authenticated HTTP checks and the backend-to-Worker path still need verification during Render setup.
+The `sweet-d1-api` Worker is deployed with `SWEET_API_SECRET` installed. Its public URL is `https://sweet-d1-api.sweet-d1-worker.workers.dev`; this URL is recorded in the ignored local `.env`. Production verification is complete: the Render health endpoint returned `UP`, and authenticated `GET /api/cities` returned four cities, confirming the backend-to-Worker path.
 
 From `worker/`, inspect migration status and the target before applying anything remotely:
 
@@ -80,10 +80,10 @@ Set `SWEET_API_BASE_URL` to the deployed backend origin and `SWEET_API_ACCESS_TO
 ## Release checklist
 
 - Configure and verify the existing D1 database ID before any remote migration.
-- Deploy the Worker with a Wrangler secret and verify its production URL.
-- Deploy the Render Blueprint and configure the Worker URL, Worker secret, and API access token in Render.
-- Confirm `/actuator/health` and authenticated `GET /api/cities` succeed on the Render URL.
-- Build and smoke-test a JavaFX app image on each target operating system.
+- Worker deployment and authenticated backend-to-Worker access are verified.
+- Render deployment, `/actuator/health`, and authenticated `GET /api/cities` are verified.
+- The `v0.1.4` release workflow completed successfully and published the Windows JAR bundle and platform app images.
+- Build and smoke-test a JavaFX app image on a clean machine without a JDK; confirm city loading and simulation controls work.
 - Pull requests and branch pushes run backend/Worker tests and build the backend Docker image. Push a version tag such as `v0.1.0` to also test/package the JavaFX client on Windows and Linux runners and publish Windows x64 and Linux x64 app images as `.tar.gz` assets plus the Windows x64 JAR bundle on a GitHub release.
 - On each platform, unpack the matching asset and run the included `Sweet` app image on a machine without a JDK. Do not commit generated files or credentials.
 

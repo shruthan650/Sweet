@@ -15,11 +15,11 @@ The active application is the Spring Boot backend, Cloudflare D1 Worker, and Jav
 - Phase 4: pathfinding and traffic complete
 - Phase 5: Spring Boot REST API complete
 - Phase 6: JavaFX desktop application complete
-- Phase 7: Cloudflare D1 persistence complete; local Worker/D1 integration verified (remote deployment verification in Phase 11)
+- Phase 7: Cloudflare D1 persistence complete; local and deployed Worker/D1 integration verified in Phase 11
 - Phase 8: JavaFX desktop integration with persistent simulation complete; city edits are explicitly saved through the backend, and simulation vehicle/traffic-light state is saved after each tick, step, and reset
 - Phase 9: Real-time update evaluation complete; the single JavaFX client uses one-second REST ticks and refreshes city state, so WebSockets are deferred until server-driven updates or multiple concurrent clients are required
 - Phase 10: Testing and performance complete; backend suite has 50 passing tests, desktop suite has 12 passing tests (including JavaFX canvas selection and grid-click interactions), and Worker suite has 4 passing tests plus a passing typecheck; coverage includes BFS/Dijkstra, HTTP error contracts, Worker city reloads, local D1 process-restart persistence, SQL migration application, and a recorded local simulation benchmark
-- Phase 11: Backend deployment and desktop distribution — in progress; Render Docker blueprint, production API bearer-token protection, environment-based Worker configuration, tested Actuator health endpoint, and native jpackage app-image workflow are prepared; the new Sweet D1 schema is applied and the Worker is deployed with its secret, while authenticated endpoint verification, Render deployment, and clean-machine desktop checks remain
+- Phase 11: Backend deployment and desktop distribution — in progress; Render and the Cloudflare Worker are deployed, authenticated API access is verified (health `UP`, four cities returned), and Windows/Linux desktop packages were published in release `v0.1.4`; clean-machine desktop launch checks remain
 
 ## Requirements
 
