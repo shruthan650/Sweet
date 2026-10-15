@@ -43,7 +43,21 @@ npm.cmd --prefix worker run typecheck
 
 ## Run the desktop client
 
-Start the Spring Boot API first. The desktop client uses `http://localhost:8080` by default; set `SWEET_API_BASE_URL` to a different HTTP(S) origin when needed. Create and delete cities from the sidebar; deletion requires confirmation.
+### Run from VS Code with the deployed backend
+
+Create a local `.env` from `.env.example` and set `SWEET_API_ACCESS_TOKEN` to the same client token configured on Render. In VS Code, open the repository root and press **Ctrl+Shift+B**, then select **Run Sweet Desktop** if prompted. This task runs `desktop/run.ps1`, which loads `SWEET_API_BASE_URL` and `SWEET_API_ACCESS_TOKEN` from `.env` and launches the JavaFX client. If `SWEET_API_BASE_URL` is absent, the launcher defaults to `https://sweet-yqdu.onrender.com`. The `.env` file is ignored by Git; never commit or share its secrets.
+
+You can also launch it from PowerShell at the repository root:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File desktop\run.ps1
+```
+
+### Run with a local backend
+
+Start the local Spring Boot API first. The desktop client defaults to `http://localhost:8080`; for another HTTP(S) origin, set `SWEET_API_BASE_URL`. Local API access does not require a bearer token unless production security is enabled.
+
+Create and delete cities from the sidebar; deletion requires confirmation.
 Place vehicles on intersections, then select a vehicle and choose a connected destination; the backend computes and saves the route. Deleting roads or intersections clears affected vehicle routes.
 Simulation ticks persist vehicle and traffic-light state; Start and Resume advance the simulation automatically once per second, while Step advances exactly one tick when paused. Reset restores the engine's starting vehicle and traffic-light state and persists it. City edits update an active simulation, and deleting a city removes its active simulation.
 
