@@ -287,20 +287,29 @@ public class SweetDesktopApplication extends Application {
                 statusLabel.setText("Could not load cities: " + errorMessage(failure));
                 return;
             }
-            if (!cities.isEmpty()) {
+            boolean demoExists = cities.stream().anyMatch(city -> SampleCity.ID.equals(city.id()));
+            if (demoExists) {
+                loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton,
+                        cityListLoadSequence, SampleCity.ID);
+                return;
+            }
+
+            boolean hasOlderStarter = cities.stream()
+                    .anyMatch(city -> SampleCity.LEGACY_ID.equals(city.id()));
+            if (!cities.isEmpty() && !hasOlderStarter) {
                 loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton,
                         cityListLoadSequence, null);
                 return;
             }
 
-            statusLabel.setText("Creating the Sweet Starter City...");
+            statusLabel.setText("Creating the Sweet Traffic Demo...");
             apiClient.createCity(SampleCity.json()).whenComplete((created, createFailure) ->
                     Platform.runLater(() -> {
                         if (cityListLoadSequence.get() != sequence) {
                             return;
                         }
                         if (createFailure != null) {
-                            statusLabel.setText("Could not create the starter city: "
+                            statusLabel.setText("Could not create the traffic demo: "
                                     + errorMessage(createFailure));
                             return;
                         }

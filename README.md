@@ -66,7 +66,7 @@ Simulation ticks persist vehicle and traffic-light state; Start and Resume advan
 .\mvnw.cmd -f desktop\pom.xml javafx:run
 ```
 
-On first launch, the desktop creates a `Sweet Starter City` if the backend has no saved cities. It includes a connected road layout, central traffic light, sample buildings, and a vehicle to explore.
+On first launch, the desktop creates a `Sweet Traffic Demo` if the backend has no saved cities. It contains a 4-by-4 intersection grid, 24 connected road segments, 12 buildings, 12 vehicles with sample routes, and four traffic lights. Start or step the simulation to watch the vehicles move. If the backend has the earlier `Sweet Starter City`, the app adds this richer demo alongside it without changing the older city.
 
 ## Cloudflare D1 persistence
 
