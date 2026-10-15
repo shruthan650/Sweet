@@ -50,8 +50,12 @@ Create a local `.env` from `.env.example` and set `SWEET_API_ACCESS_TOKEN` to th
 You can also launch it from PowerShell at the repository root:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File desktop\run.ps1
+$env:SWEET_API_BASE_URL = "https://sweet-yqdu.onrender.com"
+$env:SWEET_API_ACCESS_TOKEN = ((Get-Content .env | Where-Object { $_ -match '^SWEET_API_ACCESS_TOKEN=' } | Select-Object -First 1) -split '=', 2)[1].Trim().Trim('"').Trim("'")
+.\mvnw.cmd -f desktop\pom.xml javafx:run
 ```
+
+This reads the token from your local, Git-ignored `.env` file; it does not print or add the token to the repository. You need the API access token configured for the hosted service. Do not paste a real token into a public issue, commit, or README. Alternatively, run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File desktop\run.ps1` to use the same local `.env` settings.
 
 ### Run with a local backend
 
