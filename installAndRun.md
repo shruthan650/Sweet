@@ -6,7 +6,7 @@ Sweet is a JavaFX desktop city simulator. Its desktop client connects to the hos
 
 - You need an internet connection and an API access token issued for the hosted Sweet service. The token is not included in downloads. Ask the project maintainer how to obtain access; never copy a token from a public post or commit one to GitHub.
 - The native app images include a Java runtime. The Windows JAR bundle requires Java 25.
-- The latest release, [`v0.1.5`](https://github.com/shruthan650/Sweet/releases/tag/v0.1.5), includes the JavaFX startup fix for the Windows and Linux native app images. The release workflow completed successfully and uploaded all three downloads listed below.
+- The latest release, [`v0.1.6`](https://github.com/shruthan650/Sweet/releases/tag/v0.1.6), includes the JavaFX startup fix and continuously moving sample-city traffic. The release workflow completed successfully and uploaded all three downloads listed below.
 
 ## Windows: native app image (no Java installation required)
 
@@ -64,5 +64,5 @@ When the app opens, select a city from the list. The hosted service currently ha
 
 - **Unauthorized / HTTP 401:** check that the API token was issued for the hosted service and that it was entered correctly. Do not send the token in a screenshot or issue.
 - **Connection refused or timeout:** check your internet connection and try again. The hosted free service may take time to wake up after inactivity.
-- **Windows native image closes immediately:** confirm you downloaded `sweet-windows-x64.tar.gz` from `v0.1.5` or later and extracted the full archive before launching `Sweet.exe`.
+- **Windows native image closes immediately:** confirm you downloaded `sweet-windows-x64.tar.gz` from `v0.1.6` or later and extracted the full archive before launching `Sweet.exe`.
 - **The JAR launcher says Java is missing:** install Java 25 and confirm `java -version` works in PowerShell.

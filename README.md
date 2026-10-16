@@ -20,8 +20,8 @@ The active application is the Spring Boot backend, Cloudflare D1 Worker, and Jav
 - Phase 7: Cloudflare D1 persistence complete; local and deployed Worker/D1 integration verified in Phase 11
 - Phase 8: JavaFX desktop integration with persistent simulation complete; city edits are explicitly saved through the backend, and simulation vehicle/traffic-light state is saved after each tick, step, and reset
 - Phase 9: Real-time update evaluation complete; the single JavaFX client uses one-second REST ticks and refreshes city state, so WebSockets are deferred until server-driven updates or multiple concurrent clients are required
-- Phase 10: Testing and performance complete; backend suite has 50 passing tests, desktop suite has 12 passing tests (including JavaFX canvas selection and grid-click interactions), and Worker suite has 4 passing tests plus a passing typecheck; coverage includes BFS/Dijkstra, HTTP error contracts, Worker city reloads, local D1 process-restart persistence, SQL migration application, and a recorded local simulation benchmark
-- Phase 11: Backend deployment and desktop distribution — in progress; Render and the Cloudflare Worker are deployed, authenticated API access is verified (health `UP`, four cities returned), and Windows/Linux packages are published; `v0.1.5` includes the JavaFX startup fix, with clean-machine verification still pending
+- Phase 10: Testing and performance complete; backend suite has 51 passing tests, desktop suite has 13 passing tests (including sample-city route and signal coverage), and Worker suite has 4 passing tests plus a passing typecheck; coverage includes BFS/Dijkstra, HTTP error contracts, Worker city reloads, local D1 process-restart persistence, SQL migration application, and a recorded local simulation benchmark
+- Phase 11: Backend deployment and desktop distribution — in progress; Render and the Cloudflare Worker are deployed, authenticated API access is verified (health `UP`, four cities returned), and Windows/Linux packages are published; `v0.1.6` includes the JavaFX startup fix and repeating sample traffic, with clean-machine verification still pending
 
 ## Requirements
 
