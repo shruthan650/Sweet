@@ -304,7 +304,8 @@ public class SweetDesktopApplication extends Application {
             boolean hasOlderStarter = cities.stream()
                     .anyMatch(city -> SampleCity.LEGACY_ID.equals(city.id())
                             || SampleCity.PREVIOUS_DEMO_ID.equals(city.id())
-                            || SampleCity.OLDER_DEMO_ID.equals(city.id()));
+                            || SampleCity.OLDER_DEMO_ID.equals(city.id())
+                            || SampleCity.OLDEST_DEMO_ID.equals(city.id()));
             if (!cities.isEmpty() && !hasOlderStarter) {
                 loadCities(apiClient, cityList, cityCanvas, statusLabel, refreshButton,
                         cityListLoadSequence, null);

@@ -13,11 +13,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 /** A busy starter map for demonstrating routes, vehicles, and traffic lights. */
 final class SampleCity {
 
-    static final String ID = "sweet-traffic-demo-v4";
+    static final String ID = "sweet-traffic-demo-v5";
     static final String NAME = "Sweet Traffic Demo";
     static final String LEGACY_ID = "sweet-demo-v1";
-    static final String PREVIOUS_DEMO_ID = "sweet-traffic-demo-v3";
-    static final String OLDER_DEMO_ID = "sweet-traffic-demo-v2";
+    static final String PREVIOUS_DEMO_ID = "sweet-traffic-demo-v4";
+    static final String OLDER_DEMO_ID = "sweet-traffic-demo-v3";
+    static final String OLDEST_DEMO_ID = "sweet-traffic-demo-v2";
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final int[] X_COORDINATES = { 2, 8, 14, 20 };
     private static final int[] Y_COORDINATES = { 2, 7, 12, 16 };
@@ -216,12 +217,13 @@ final class SampleCity {
             }
             route.add(start);
         }
-        return new VehicleSpec(id, name, startColumn, startRow, speedKph, route);
+        return new VehicleSpec(id, name, startColumn, startRow, speedKph,
+                outboundRoute.getLast(), route);
     }
 
     private static ObjectNode vehicleJson(VehicleSpec vehicle, Map<String, IntersectionSpec> intersections) {
         IntersectionSpec start = intersection(vehicle.startColumn(), vehicle.startRow());
-        IntersectionSpec destination = vehicle.route().getLast().asIntersection();
+        IntersectionSpec destination = vehicle.destination().asIntersection();
         ObjectNode node = JSON.createObjectNode();
         node.put("id", vehicle.id());
         node.put("name", vehicle.name());
@@ -298,7 +300,7 @@ final class SampleCity {
     }
 
     private record VehicleSpec(String id, String name, int startColumn, int startRow,
-            int speedKph, List<Position> route) {
+            int speedKph, Position destination, List<Position> route) {
     }
 
     private record BuildingSpec(String id, String name, int x, int y,

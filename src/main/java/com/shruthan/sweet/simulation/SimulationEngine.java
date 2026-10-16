@@ -146,6 +146,7 @@ public class SimulationEngine {
             if (vehicle == null) {
                 continue;
             }
+            restoreTrafficDemoRoute(vehicle);
             if (vehicle.getCurrentIntersection() == null && !vehicle.getRoute().isEmpty()) {
                 vehicle.setCurrentIntersection(vehicle.getRoute().remove(0));
                 vehicle.setX(vehicle.getCurrentIntersection().getX());
@@ -154,7 +155,25 @@ public class SimulationEngine {
                 continue;
             }
             vehicle.advanceRoute();
+            restoreTrafficDemoRoute(vehicle);
         }
+    }
+
+    private void restoreTrafficDemoRoute(Vehicle vehicle) {
+        VehicleResetState initialState = vehicleResetStates.get(vehicle.getId());
+        if (!isTrafficDemoCity() || !vehicle.getRoute().isEmpty()
+                || initialState == null || initialState.routeIds().isEmpty()) {
+            return;
+        }
+        vehicle.setRoute(initialState.routeIds().stream()
+                .map(this::findIntersection)
+                .filter(Objects::nonNull)
+                .toList());
+        vehicle.setDestination(findIntersection(initialState.destinationId()));
+    }
+
+    private boolean isTrafficDemoCity() {
+        return city.getId() != null && city.getId().startsWith("sweet-traffic-demo-v");
     }
 
     private void captureVehicleResetStates() {
