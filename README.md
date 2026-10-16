@@ -2,6 +2,8 @@
 
 Sweet is a Java 25 / Spring Boot city-simulation project that models roads, intersections, buildings, vehicles, traffic lights, and simulation events for a 2D urban environment.
 
+> **Before installing or running Sweet, read [Install and run](installAndRun.md).** It explains the current downloads, Java and no-Java launch options, API token setup, and troubleshooting.
+
 ## Current state
 
 The active application is the Spring Boot backend, Cloudflare D1 Worker, and JavaFX desktop client. The existing React/Vite files are retained in the repository but are outside the current development scope; no web frontend or Vercel deployment work is planned.
@@ -19,7 +21,7 @@ The active application is the Spring Boot backend, Cloudflare D1 Worker, and Jav
 - Phase 8: JavaFX desktop integration with persistent simulation complete; city edits are explicitly saved through the backend, and simulation vehicle/traffic-light state is saved after each tick, step, and reset
 - Phase 9: Real-time update evaluation complete; the single JavaFX client uses one-second REST ticks and refreshes city state, so WebSockets are deferred until server-driven updates or multiple concurrent clients are required
 - Phase 10: Testing and performance complete; backend suite has 50 passing tests, desktop suite has 12 passing tests (including JavaFX canvas selection and grid-click interactions), and Worker suite has 4 passing tests plus a passing typecheck; coverage includes BFS/Dijkstra, HTTP error contracts, Worker city reloads, local D1 process-restart persistence, SQL migration application, and a recorded local simulation benchmark
-- Phase 11: Backend deployment and desktop distribution — in progress; Render and the Cloudflare Worker are deployed, authenticated API access is verified (health `UP`, four cities returned), and Windows/Linux packages are published; the `v0.1.4` Windows app image had a JavaFX startup configuration issue, now fixed in packaging scripts and awaiting a new release plus clean-machine verification
+- Phase 11: Backend deployment and desktop distribution — in progress; Render and the Cloudflare Worker are deployed, authenticated API access is verified (health `UP`, four cities returned), and Windows/Linux packages are published; `v0.1.5` includes the JavaFX startup fix, with clean-machine verification still pending
 
 ## Requirements
 
@@ -73,7 +75,7 @@ Simulation ticks persist vehicle and traffic-light state; Start and Resume advan
 .\mvnw.cmd -f desktop\pom.xml javafx:run
 ```
 
-On first launch, the desktop creates a `Sweet Traffic Demo` if the backend has no saved cities. It contains a 4-by-4 intersection grid, 24 connected road segments, 12 buildings, 20 vehicles with multi-trip sample routes, and four traffic lights. Start or step the simulation to watch the vehicles animate between intersections. If the backend has an earlier starter or traffic demo, the app adds this updated demo alongside it without changing the existing city.
+On first launch, the desktop creates a `Sweet Traffic Demo` if the backend has no saved cities. It contains a 4-by-4 intersection grid, 24 connected road segments, 12 buildings, 20 vehicles with repeating multi-trip routes, and four traffic lights. Start or step the simulation to watch the vehicles animate between destinations while the lights cycle. If the backend has an earlier starter or traffic demo, the app adds this updated demo alongside it without changing the existing city.
 
 ## Cloudflare D1 persistence
 

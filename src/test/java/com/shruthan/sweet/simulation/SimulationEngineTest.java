@@ -105,4 +105,44 @@ class SimulationEngineTest {
         assertEquals(4, vehicle.getX());
         assertEquals(VehicleStatus.ARRIVED, vehicle.getStatus());
     }
+
+    @Test
+    void trafficDemoVehiclesKeepFollowingTheirRouteWhileLightsCycle() {
+        City city = new City("sweet-traffic-demo-v5", "Sweet Traffic Demo", 10, 10);
+        Intersection start = new Intersection("i1", 1, 1);
+        Intersection middle = new Intersection("i2", 4, 1);
+        Intersection destination = new Intersection("i3", 7, 1);
+        TrafficLight light = new TrafficLight("tl-1", start, TrafficLightState.RED, 1);
+        start.setTrafficLight(light);
+        city.addIntersection(start);
+        city.addIntersection(middle);
+        city.addIntersection(destination);
+
+        Vehicle vehicle = new Vehicle("v1", "Taxi", start.getX(), start.getY(), 30);
+        vehicle.setCurrentIntersection(start);
+        vehicle.setDestination(destination);
+        vehicle.setRoute(List.of(middle, destination, middle, start));
+        city.addVehicle(vehicle);
+
+        SimulationEngine engine = new SimulationEngine(city);
+        engine.start();
+        engine.tick();
+        assertEquals(middle.getX(), vehicle.getX());
+        assertEquals(TrafficLightState.GREEN, light.getState());
+
+        engine.tick();
+        assertEquals(destination.getX(), vehicle.getX());
+        assertEquals(VehicleStatus.ARRIVED, vehicle.getStatus());
+        assertEquals(TrafficLightState.YELLOW, light.getState());
+
+        engine.tick();
+        engine.tick();
+        assertEquals(start.getX(), vehicle.getX());
+        assertFalse(vehicle.getRoute().isEmpty(), "the completed sample route should be replenished");
+        assertEquals(TrafficLightState.GREEN, light.getState());
+
+        engine.tick();
+        assertEquals(middle.getX(), vehicle.getX());
+        assertEquals(TrafficLightState.YELLOW, light.getState());
+    }
 }
